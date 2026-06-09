@@ -1,0 +1,17 @@
+{
+  "table_name": "products",
+  "source_file": "olist_products_dataset.csv",
+  "primary_key": "product_id",
+  "description": "Contains product attributes and category information.",
+  "columns": {
+    "product_id": "Unique product identifier",
+    "product_category_name": "Product category in Portuguese",
+    "product_name_lenght": "Length of product name",
+    "product_description_lenght": "Length of product description",
+    "product_photos_qty": "Number of product photos",
+    "product_weight_g": "Product weight in grams",
+    "product_length_cm": "Product length in centimeters",
+    "product_height_cm": "Product height in centimeters",
+    "product_width_cm": "Product width in centimeters"
+  }
+}

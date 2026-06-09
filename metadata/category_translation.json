@@ -1,0 +1,9 @@
+{
+  "table_name": "category_translation",
+  "source_file": "product_category_name_translation.csv",
+  "description": "Maps Portuguese product category names to English equivalents.",
+  "columns": {
+    "product_category_name": "Category name in Portuguese",
+    "product_category_name_english": "Category name in English"
+  }
+}

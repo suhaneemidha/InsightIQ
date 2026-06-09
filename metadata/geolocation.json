@@ -1,0 +1,12 @@
+{
+  "table_name": "geolocation",
+  "source_file": "olist_geolocation_dataset.csv",
+  "description": "Contains geographic coordinates mapped to zip code prefixes.",
+  "columns": {
+    "geolocation_zip_code_prefix": "Zip code prefix",
+    "geolocation_lat": "Latitude",
+    "geolocation_lng": "Longitude",
+    "geolocation_city": "City",
+    "geolocation_state": "State"
+  }
+}

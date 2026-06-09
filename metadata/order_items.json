@@ -1,0 +1,14 @@
+{
+  "table_name": "order_items",
+  "source_file": "olist_order_items_dataset.csv",
+  "description": "Contains individual products purchased within each order.",
+  "columns": {
+    "order_id": "Order identifier",
+    "order_item_id": "Item sequence number within order",
+    "product_id": "Purchased product identifier",
+    "seller_id": "Seller identifier",
+    "shipping_limit_date": "Shipping deadline",
+    "price": "Item price",
+    "freight_value": "Shipping cost"
+  }
+}

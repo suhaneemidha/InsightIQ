@@ -1,0 +1,12 @@
+{
+  "table_name": "sellers",
+  "source_file": "olist_sellers_dataset.csv",
+  "primary_key": "seller_id",
+  "description": "Contains seller location information.",
+  "columns": {
+    "seller_id": "Unique seller identifier",
+    "seller_zip_code_prefix": "Seller zip code prefix",
+    "seller_city": "Seller city",
+    "seller_state": "Seller state"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "table_name": "payments",
+  "source_file": "olist_order_payments_dataset.csv",
+  "description": "Contains payment information for orders.",
+  "columns": {
+    "order_id": "Order identifier",
+    "payment_sequential": "Payment sequence number",
+    "payment_type": "Payment method",
+    "payment_installments": "Number of installments",
+    "payment_value": "Payment amount"
+  }
+}
