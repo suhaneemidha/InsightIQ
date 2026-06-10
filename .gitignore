@@ -3,6 +3,8 @@ __pycache__/
 *.pyc
 .DS_Store
 venv/
+
+.ipynb_checkpoints/
 datasets/
 vector_db/
 olist.db

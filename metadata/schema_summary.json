@@ -1,0 +1,22 @@
+{
+  "olist_orders_dataset": {
+    "description": "Main orders table. One row per order.",
+    "key_columns": ["order_id", "customer_id", "order_status", "order_purchase_timestamp"]
+  },
+  "olist_order_items_dataset": {
+    "description": "Items within each order.",
+    "key_columns": ["order_id", "product_id", "seller_id", "price", "freight_value"]
+  },
+  "olist_customers_dataset": {
+    "description": "Customer information.",
+    "key_columns": ["customer_id", "customer_unique_id"]
+  },
+  "olist_products_dataset": {
+    "description": "Product catalog.",
+    "key_columns": ["product_id", "product_category_name"]
+  },
+  "olist_sellers_dataset": {
+    "description": "Seller information.",
+    "key_columns": ["seller_id"]
+  }
+}
