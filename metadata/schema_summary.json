@@ -1,22 +1,47 @@
 {
   "olist_orders_dataset": {
     "description": "Main orders table. One row per order.",
-    "key_columns": ["order_id", "customer_id", "order_status", "order_purchase_timestamp"]
+    "row_count": 99441,
+    "key_columns": ["order_id", "customer_id", "order_status", "order_purchase_timestamp", "order_delivered_customer_date", "order_estimated_delivery_date"]
   },
   "olist_order_items_dataset": {
-    "description": "Items within each order.",
+    "description": "Items within each order. One row per item in an order.",
+    "row_count": 112650,
     "key_columns": ["order_id", "product_id", "seller_id", "price", "freight_value"]
   },
-  "olist_customers_dataset": {
-    "description": "Customer information.",
-    "key_columns": ["customer_id", "customer_unique_id"]
+  "olist_order_payments_dataset": {
+    "description": "Payment details per order. Multiple payment types possible per order.",
+    "row_count": 103886,
+    "key_columns": ["order_id", "payment_type", "payment_installments", "payment_value"]
   },
-  "olist_products_dataset": {
-    "description": "Product catalog.",
-    "key_columns": ["product_id", "product_category_name"]
+  "olist_order_reviews_dataset": {
+    "description": "Customer reviews for orders. Contains review score and comments.",
+    "row_count": 99224,
+    "key_columns": ["review_id", "order_id", "review_score", "review_comment_message"]
+  },
+  "olist_customers_dataset": {
+    "description": "Customer information including location by state and city.",
+    "row_count": 99441,
+    "key_columns": ["customer_id", "customer_unique_id", "customer_city", "customer_state"]
   },
   "olist_sellers_dataset": {
-    "description": "Seller information.",
-    "key_columns": ["seller_id"]
+    "description": "Seller information including location.",
+    "row_count": 3095,
+    "key_columns": ["seller_id", "seller_city", "seller_state"]
+  },
+  "olist_products_dataset": {
+    "description": "Product details including category, dimensions and weight.",
+    "row_count": 32951,
+    "key_columns": ["product_id", "product_category_name", "product_weight_g", "product_length_cm"]
+  },
+  "olist_geolocation_dataset": {
+    "description": "ZIP code to latitude/longitude mapping for Brazil.",
+    "row_count": 1000163,
+    "key_columns": ["geolocation_zip_code_prefix", "geolocation_lat", "geolocation_lng", "geolocation_state"]
+  },
+  "product_category_name_translation": {
+    "description": "Translates Portuguese product category names to English.",
+    "row_count": 71,
+    "key_columns": ["product_category_name", "product_category_name_english"]
   }
 }
