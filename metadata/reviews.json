@@ -1,0 +1,14 @@
+{
+  "table_name": "reviews",
+  "source_file": "olist_order_reviews_dataset.csv",
+  "description": "Contains customer reviews and ratings for orders.",
+  "columns": {
+    "review_id": "Review identifier",
+    "order_id": "Associated order identifier",
+    "review_score": "Rating score from 1 to 5",
+    "review_comment_title": "Review title",
+    "review_comment_message": "Review text",
+    "review_creation_date": "Review creation date",
+    "review_answer_timestamp": "Review response timestamp"
+  }
+}

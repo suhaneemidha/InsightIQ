@@ -1,0 +1,13 @@
+{
+  "table_name": "customers",
+  "source_file": "olist_customers_dataset.csv",
+  "primary_key": "customer_id",
+  "description": "Contains customer information including unique customer identifiers, zip code prefixes, city, and state.",
+  "columns": {
+    "customer_id": "Unique identifier for each customer",
+    "customer_unique_id": "Unique identifier for a person across multiple orders",
+    "customer_zip_code_prefix": "Customer zip code prefix",
+    "customer_city": "Customer city",
+    "customer_state": "Customer state"
+  }
+}

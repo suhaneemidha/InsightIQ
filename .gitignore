@@ -7,3 +7,4 @@ venv/
 .ipynb_checkpoints/
 datasets/
 vector_db/
+olist.db
