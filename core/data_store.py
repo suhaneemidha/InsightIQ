@@ -2,7 +2,7 @@ import duckdb
 import os
 import json
 
-DATA_PATH = "datasets/olist/"
+DATA_PATH = "data/"
 DB_PATH = "olist.db"
 
 def load_all_csvs():
