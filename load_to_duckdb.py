@@ -2,7 +2,7 @@ import duckdb
 
 con = duckdb.connect("olist.db")
 
-base = "datasets/olist"
+base = "data"
 
 tables = {
     "customers": f"{base}/olist_customers_dataset.csv",
@@ -20,7 +20,7 @@ for table, file in tables.items():
     print(f"Loading {table}...")
     con.execute(f"""
         CREATE OR REPLACE TABLE {table} AS
-        SELECT * FROM read_csv_auto('{file}')
+        SELECT * FROM read_csv_auto('{file}', ignore_errors=true)
     """)
 
     rows = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
