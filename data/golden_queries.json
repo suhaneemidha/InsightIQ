@@ -1,0 +1,142 @@
+[
+  {
+    "id": 1,
+    "nl_query": "What are the top 5 sellers by total revenue?",
+    "sql": "SELECT seller_id, ROUND(SUM(price), 2) AS total_revenue FROM order_items GROUP BY seller_id ORDER BY total_revenue DESC LIMIT 5",
+    "tables_used": ["order_items"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 2,
+    "nl_query": "How many orders were placed each month in 2018?",
+    "sql": "SELECT MONTH(STRPTIME(order_purchase_timestamp, '%d-%m-%Y %H:%M')) AS month,COUNT(*) AS order_count FROM orders WHERE YEAR(STRPTIME(order_purchase_timestamp, '%d-%m-%Y %H:%M')) = 2018 GROUP BY month ORDER BY month",
+    "tables_used": ["orders"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 3,
+    "nl_query": "What is the average review score per product category?",
+    "sql": "SELECT p.product_category_name, ROUND(AVG(r.review_score), 2) AS avg_score FROM reviews r JOIN order_items i ON r.order_id = i.order_id JOIN products p ON i.product_id = p.product_id GROUP BY p.product_category_name ORDER BY avg_score DESC",
+    "tables_used": ["reviews", "order_items", "products"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 4,
+    "nl_query": "Which states have the highest average delivery delay?",
+    "sql": "SELECT YEAR(STRPTIME(o.order_purchase_timestamp, '%d-%m-%Y %H:%M')) AS year,ROUND(SUM(i.price), 2) AS total_revenue FROM orders o JOIN order_items i ON o.order_id = i.order_id GROUP BY year ORDER BY year",
+    "tables_used": ["orders", "customers"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 5,
+    "nl_query": "What are the most common payment types?",
+    "sql": "SELECT payment_type, COUNT(*) AS count FROM payments GROUP BY payment_type ORDER BY count DESC",
+    "tables_used": ["payments"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 6,
+    "nl_query": "Which sellers have more than 200 orders?",
+    "sql": "SELECT seller_id, COUNT(DISTINCT order_id) AS order_count FROM order_items GROUP BY seller_id HAVING COUNT(DISTINCT order_id) > 200 ORDER BY order_count DESC",
+    "tables_used": ["order_items"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 7,
+    "nl_query": "What is the total revenue by year?",
+    "sql": "SELECT YEAR(STRPTIME(o.order_purchase_timestamp, '%d-%m-%Y %H:%M')) AS year, ROUND(SUM(i.price), 2) AS total_revenue FROM orders o JOIN order_items i ON o.order_id = i.order_id GROUP BY year ORDER BY year",
+    "tables_used": ["orders", "order_items"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 8,
+    "nl_query": "What percentage of orders were delivered on time?",
+    "sql": "SELECT ROUND(100.0 * SUM(CASE WHEN order_delivered_customer_date <= order_estimated_delivery_date THEN 1 ELSE 0 END) / COUNT(*), 2) AS on_time_pct FROM orders WHERE order_delivered_customer_date IS NOT NULL",
+    "tables_used": ["orders"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 9,
+    "nl_query": "What are the top 10 product categories by number of items sold?",
+    "sql": "SELECT p.product_category_name, COUNT(*) AS items_sold FROM order_items i JOIN products p ON i.product_id = p.product_id GROUP BY p.product_category_name ORDER BY items_sold DESC LIMIT 10",
+    "tables_used": ["order_items", "products"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 10,
+    "nl_query": "Which cities have the most customers?",
+    "sql": "SELECT customer_city, COUNT(*) AS customer_count FROM customers GROUP BY customer_city ORDER BY customer_count DESC LIMIT 10",
+    "tables_used": ["customers"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 11,
+    "nl_query": "What is the average freight value by seller state?",
+    "sql": "SELECT s.seller_state, ROUND(AVG(i.freight_value), 2) AS avg_freight FROM order_items i JOIN sellers s ON i.seller_id = s.seller_id GROUP BY s.seller_state ORDER BY avg_freight DESC",
+    "tables_used": ["order_items", "sellers"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 12,
+    "nl_query": "How many unique customers made purchases in 2017?",
+    "sql": "SELECT COUNT(DISTINCT c.customer_unique_id) AS unique_customers FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE YEAR(STRPTIME(o.order_purchase_timestamp, '%d-%m-%Y %H:%M')) = 2017",
+    "tables_used": ["orders", "customers"],
+    "difficulty": "medium"
+  },
+  {
+    "id": 13,
+    "nl_query": "What is the average number of installments for credit card payments?",
+    "sql": "SELECT ROUND(AVG(payment_installments), 2) AS avg_installments FROM payments WHERE payment_type = 'credit_card'",
+    "tables_used": ["payments"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 14,
+    "nl_query": "Which product categories have the worst average review scores?",
+    "sql": "SELECT p.product_category_name, ROUND(AVG(r.review_score), 2) AS avg_score, COUNT(*) AS review_count FROM reviews r JOIN order_items i ON r.order_id = i.order_id JOIN products p ON i.product_id = p.product_id GROUP BY p.product_category_name HAVING COUNT(*) > 50 ORDER BY avg_score ASC LIMIT 10",
+    "tables_used": ["reviews", "order_items", "products"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 15,
+    "nl_query": "What is the total freight cost vs product price ratio by category?",
+    "sql": "SELECT p.product_category_name, ROUND(SUM(i.freight_value) / SUM(i.price), 4) AS freight_to_price_ratio FROM order_items i JOIN products p ON i.product_id = p.product_id GROUP BY p.product_category_name ORDER BY freight_to_price_ratio DESC LIMIT 10",
+    "tables_used": ["order_items", "products"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 16,
+    "nl_query": "How many orders were canceled in each month of 2018?",
+    "sql": "SELECT MONTH(STRPTIME(order_purchase_timestamp, '%d-%m-%Y %H:%M')) AS month,COUNT(*) AS cancelled_count FROM orders WHERE order_status = 'canceled' AND YEAR(STRPTIME(order_purchase_timestamp, '%d-%m-%Y %H:%M')) = 2018 GROUP BY month ORDER BY month",
+    "tables_used": ["orders"],
+    "difficulty": "easy"
+  },
+  {
+    "id": 17,
+    "nl_query": "Which English product category names have the highest average price?",
+    "sql": "SELECT t.product_category_name_english, ROUND(AVG(i.price), 2) AS avg_price FROM order_items i JOIN products p ON i.product_id = p.product_id JOIN category_translation t ON p.product_category_name = t.product_category_name GROUP BY t.product_category_name_english ORDER BY avg_price DESC LIMIT 10",
+    "tables_used": ["order_items", "products", "category_translation"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 18,
+    "nl_query": "What is the month-over-month revenue growth in 2018?",
+    "sql": "WITH monthly AS (SELECT MONTH(STRPTIME(o.order_purchase_timestamp, '%d-%m-%Y %H:%M')) AS month, SUM(i.price) AS revenue FROM orders o JOIN order_items i ON o.order_id = i.order_id WHERE YEAR(STRPTIME(o.order_purchase_timestamp, '%d-%m-%Y %H:%M')) = 2018 GROUP BY month) SELECT month, ROUND(revenue, 2) AS revenue, ROUND(100.0 * (revenue - LAG(revenue) OVER (ORDER BY month)) / LAG(revenue) OVER (ORDER BY month), 2) AS mom_growth_pct FROM monthly ORDER BY month",
+    "tables_used": ["orders", "order_items"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 19,
+    "nl_query": "Which sellers have both high revenue and high average review scores?",
+    "sql": "SELECT i.seller_id, ROUND(SUM(i.price), 2) AS total_revenue, ROUND(AVG(r.review_score), 2) AS avg_review FROM order_items i JOIN reviews r ON i.order_id = r.order_id GROUP BY i.seller_id HAVING total_revenue > 50000 AND avg_review >= 4.0 ORDER BY total_revenue DESC",
+    "tables_used": ["order_items", "reviews"],
+    "difficulty": "hard"
+  },
+  {
+    "id": 20,
+    "nl_query": "What is the average time between order purchase and delivery by customer state?",
+    "sql": "SELECT c.customer_state,ROUND(AVG(DATEDIFF('day',STRPTIME(o.order_purchase_timestamp, '%d-%m-%Y %H:%M'),STRPTIME(o.order_delivered_customer_date, '%d-%m-%Y %H:%M'))),1) AS avg_delivery_days FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_delivered_customer_date IS NOT NULL GROUP BY c.customer_state ORDER BY avg_delivery_days",
+    "tables_used": ["orders", "customers"],
+    "difficulty": "medium"
+  }
+]
