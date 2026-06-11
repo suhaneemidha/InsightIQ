@@ -16,7 +16,10 @@ def load_all_csvs():
         
         conn.execute(f"""
             CREATE OR REPLACE TABLE {table_name} AS
-            SELECT * FROM read_csv_auto('{filepath}')
+            SELECT * FROM read_csv_auto(
+            '{filepath}',
+            ignore_errors=true
+            )
         """)
         
         count = conn.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()[0]
