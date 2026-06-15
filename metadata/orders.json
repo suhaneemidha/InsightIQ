@@ -2,7 +2,7 @@
   "table_name": "orders",
   "source_file": "olist_orders_dataset.csv",
   "primary_key": "order_id",
-  "description": "Contains order-level information and timestamps for the purchase lifecycle.",
+  "description": "Contains order-level information and timestamps for the purchase lifecycle and links to customers through customer_id.",
   "columns": {
     "order_id": "Unique order identifier",
     "customer_id": "Customer who placed the order",
