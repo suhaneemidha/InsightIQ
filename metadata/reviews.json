@@ -1,7 +1,7 @@
 {
   "table_name": "reviews",
   "source_file": "olist_order_reviews_dataset.csv",
-  "description": "Contains customer reviews and ratings for orders.",
+  "description": "Contains customer ratings and review comments for completed orders. Used for customer satisfaction analysis, review score trends, product quality evaluation, seller performance assessment, sentiment analysis, and customer experience reporting.",
   "columns": {
     "review_id": "Review identifier",
     "order_id": "Associated order identifier",

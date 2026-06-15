@@ -1,7 +1,7 @@
 {
   "table_name": "payments",
   "source_file": "olist_order_payments_dataset.csv",
-  "description": "Contains payment information for orders.",
+  "description": "Contains payment details for each order including payment method, installment count, and payment value. Used for payment behavior analysis, payment type popularity, installment analysis, revenue calculations, transaction value analysis, and customer purchasing behavior studies.",
   "columns": {
     "order_id": "Order identifier",
     "payment_sequential": "Payment sequence number",

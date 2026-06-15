@@ -2,7 +2,7 @@
   "table_name": "orders",
   "source_file": "olist_orders_dataset.csv",
   "primary_key": "order_id",
-  "description": "Contains order-level information and timestamps for the purchase lifecycle and links to customers through customer_id.",
+  "description":  "Main transactional table containing order lifecycle information and timestamps from purchase through delivery. Used for order volume analysis, delivery delay calculations, order status tracking, shipping performance, customer activity analysis, fulfillment monitoring, cancellations, and time-series sales reporting.",
   "columns": {
     "order_id": "Unique order identifier",
     "customer_id": "Customer who placed the order",
@@ -12,5 +12,10 @@
     "order_delivered_carrier_date": "Date handed to carrier",
     "order_delivered_customer_date": "Delivery date to customer",
     "order_estimated_delivery_date": "Estimated delivery date"
-  }
+  },
+  "relationships": [
+  "orders.customer_id -> customers.customer_id",
+  "orders.order_id -> payments.order_id",
+  "orders.order_id -> reviews.order_id"
+  ]
 }

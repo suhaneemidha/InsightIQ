@@ -2,7 +2,7 @@
   "table_name": "products",
   "source_file": "olist_products_dataset.csv",
   "primary_key": "product_id",
-  "description": "Contains product attributes and category information.",
+  "description": "Contains product attributes including category, dimensions, weight, and photo information. Used for product performance analysis, category-based sales analysis, inventory insights, product comparison, logistics cost estimation, and product review analysis.",
   "columns": {
     "product_id": "Unique product identifier",
     "product_category_name": "Product category in Portuguese",
@@ -13,5 +13,8 @@
     "product_length_cm": "Product length in centimeters",
     "product_height_cm": "Product height in centimeters",
     "product_width_cm": "Product width in centimeters"
-  }
+  },
+  "relationships": [
+  "products.product_category_name -> category_translation.product_category_name"
+  ]
 }

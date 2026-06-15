@@ -1,7 +1,7 @@
 {
   "table_name": "geolocation",
   "source_file": "olist_geolocation_dataset.csv",
-  "description": "Contains geographic coordinates mapped to zip code prefixes.",
+  "description": "Contains geographic coordinates mapped to Brazilian zip code prefixes. Used for geographic analysis, state-level delivery performance, customer and seller location mapping, logistics optimization, regional demand analysis, and geospatial visualizations.",
   "columns": {
     "geolocation_zip_code_prefix": "Zip code prefix",
     "geolocation_lat": "Latitude",

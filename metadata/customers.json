@@ -2,7 +2,7 @@
   "table_name": "customers",
   "source_file": "olist_customers_dataset.csv",
   "primary_key": "customer_id",
-  "description": "Contains customer information including unique customer identifiers, zip code prefixes, city, and state.",
+  "description": "Contains customer demographic and location information including city, state, and zip code. Used for customer segmentation, customer distribution analysis, state-wise sales analysis, regional demand trends, repeat customer analysis, and geographic reporting.",
   "columns": {
     "customer_id": "Unique identifier for each customer",
     "customer_unique_id": "Unique identifier for a person across multiple orders",

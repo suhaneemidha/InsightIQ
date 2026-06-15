@@ -1,7 +1,7 @@
 {
   "table_name": "order_items",
   "source_file": "olist_order_items_dataset.csv",
-  "description": "Contains individual products purchased within each order.",
+  "description":"Contains individual products purchased within each order, including seller, product, price, and freight cost information. Used for revenue analysis, top-selling products, seller performance, order value calculations, freight cost analysis, product sales trends, and profitability reporting.",
   "columns": {
     "order_id": "Order identifier",
     "order_item_id": "Item sequence number within order",
@@ -10,5 +10,10 @@
     "shipping_limit_date": "Shipping deadline",
     "price": "Item price",
     "freight_value": "Shipping cost"
-  }
+  },
+  "relationships": [
+  "order_items.order_id -> orders.order_id",
+  "order_items.product_id -> products.product_id",
+  "order_items.seller_id -> sellers.seller_id"
+  ]
 }

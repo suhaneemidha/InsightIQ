@@ -29,3 +29,38 @@ def build_retriever():
 def retrieve_schema(query: str, retriever) -> list[str]:
     nodes = retriever.retrieve(query)
     return [node.get_content() for node in nodes]
+
+
+from rank_bm25 import BM25Okapi
+import numpy as np
+
+class HybridRetriever:
+    def __init__(self, dense_retriever, all_chunks: list[str]):
+        self.dense_retriever = dense_retriever
+        
+        # Tokenize all chunks for BM25
+        tokenized = [chunk.lower().split() for chunk in all_chunks]
+        self.bm25 = BM25Okapi(tokenized)
+        self.all_chunks = all_chunks
+    
+    def retrieve(self, query: str, top_k: int = 6) -> list[str]:
+        # --- Dense retrieval (ChromaDB) ---
+        dense_nodes = self.dense_retriever.retrieve(query)
+        dense_results = [node.get_content() for node in dense_nodes[:10]]
+        
+        # --- Sparse retrieval (BM25) ---
+        tokenized_query = query.lower().split()
+        bm25_scores = self.bm25.get_scores(tokenized_query)
+        top_bm25_indices = np.argsort(bm25_scores)[::-1][:10]
+        sparse_results = [self.all_chunks[i] for i in top_bm25_indices]
+        
+        # --- RRF Fusion ---
+        scores = {}
+        for rank, doc in enumerate(dense_results):
+            scores[doc] = scores.get(doc, 0) + 1 / (rank + 60)
+        for rank, doc in enumerate(sparse_results):
+            scores[doc] = scores.get(doc, 0) + 1 / (rank + 60)
+        
+        # Sort by fused score, return top_k
+        ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        return [doc for doc, _ in ranked[:top_k]]

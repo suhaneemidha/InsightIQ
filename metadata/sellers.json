@@ -2,7 +2,7 @@
   "table_name": "sellers",
   "source_file": "olist_sellers_dataset.csv",
   "primary_key": "seller_id",
-  "description": "Contains seller location information.",
+  "description": "Contains seller location and identification information. Used for seller performance analysis, top seller ranking, revenue attribution, geographic seller distribution, fulfillment analysis, marketplace performance tracking, and regional business reporting.",
   "columns": {
     "seller_id": "Unique seller identifier",
     "seller_zip_code_prefix": "Seller zip code prefix",
