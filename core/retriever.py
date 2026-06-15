@@ -3,6 +3,7 @@ from llama_index.core import VectorStoreIndex, StorageContext, Settings
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 import chromadb
+from sympy import re
 
 Settings.embed_model = HuggingFaceEmbedding(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
@@ -39,7 +40,9 @@ class HybridRetriever:
         self.dense_retriever = dense_retriever
         
         # Tokenize all chunks for BM25
-        tokenized = [chunk.lower().split() for chunk in all_chunks]
+        #tokenized = [chunk.lower().split() for chunk in all_chunks]
+        import re
+        tokenized = [re.findall(r"[a-zA-Z_]+", chunk.lower()) for chunk in all_chunks]
         self.bm25 = BM25Okapi(tokenized)
         self.all_chunks = all_chunks
     
@@ -49,7 +52,8 @@ class HybridRetriever:
         dense_results = [node.get_content() for node in dense_nodes[:10]]
         
         # --- Sparse retrieval (BM25) ---
-        tokenized_query = query.lower().split()
+        #tokenized_query = query.lower().split()
+        tokenized_query = re.findall(r"[a-zA-Z_]+", query.lower())
         bm25_scores = self.bm25.get_scores(tokenized_query)
         top_bm25_indices = np.argsort(bm25_scores)[::-1][:10]
         sparse_results = [self.all_chunks[i] for i in top_bm25_indices]
@@ -57,9 +61,9 @@ class HybridRetriever:
         # --- RRF Fusion ---
         scores = {}
         for rank, doc in enumerate(dense_results):
-            scores[doc] = scores.get(doc, 0) + 1 / (rank + 60)
+            scores[doc] = scores.get(doc, 0) + 1 / (rank + 10)
         for rank, doc in enumerate(sparse_results):
-            scores[doc] = scores.get(doc, 0) + 1 / (rank + 60)
+            scores[doc] = scores.get(doc, 0) + 1 / (rank + 10)
         
         # Sort by fused score, return top_k
         ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)

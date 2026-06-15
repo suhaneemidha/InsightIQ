@@ -81,7 +81,7 @@ def generate_sql(nl_query: str, schema_context: list[str]) -> dict:
 
 
 # Optional test
-if __name__ == "__main__":
+'''if __name__ == "__main__":
 
     schema_context = [
         """
@@ -106,4 +106,63 @@ if __name__ == "__main__":
 
     result = generate_sql(query, schema_context)
 
-    print(json.dumps(result, indent=4))
+    print(json.dumps(result, indent=4))'''
+    
+
+import duckdb
+
+def validate_sql(sql: str):
+    try:
+        conn = duckdb.connect("olist.db", read_only=True)
+        conn.execute(f"EXPLAIN {sql}")
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+def generate_sql_with_retry(nl_query, schema_context, max_retries=2):
+    result = generate_sql(nl_query, schema_context)
+
+    for i in range(max_retries):
+        ok, error = validate_sql(result["sql"])
+
+        if ok:
+            result["attempts"] = i + 1
+            return result
+
+        fix_prompt = f"""
+Fix this SQL query.
+
+Schema:
+{chr(10).join(schema_context)}
+
+Question:
+{nl_query}
+
+Faulty SQL:
+{result['sql']}
+
+Error:
+{error}
+
+Return ONLY JSON:
+{{
+  "sql": "...",
+  "reasoning": "..."
+}}
+"""
+
+        response = client.chat.completions.create(
+            model="llama3-70b-8192",
+            messages=[
+                {"role": "user", "content": fix_prompt}
+            ]
+        )
+
+        raw = response.choices[0].message.content.strip()
+
+        if raw.startswith("{"):
+            result = json.loads(raw)
+
+    result["attempts"] = max_retries + 1
+    return result
