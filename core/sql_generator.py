@@ -1,13 +1,19 @@
-from groq import Groq
-from dotenv import load_dotenv
 import os
 import json
+import duckdb
+import numpy as np
+
+from sentence_transformers import SentenceTransformer
+from groq import Groq
+from dotenv import load_dotenv
 
 load_dotenv()
 
 client = Groq(
     api_key=os.getenv("GROQ_API_KEY")
 )
+
+embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
 SYSTEM_PROMPT = """
 You are an expert SQL analyst.
@@ -37,21 +43,53 @@ Format:
 Do not surround the JSON with markdown code blocks.
 Do not write any extra explanation before or after the JSON.
 """
+def load_few_shot_examples(path="golden_queries.json"):
+    with open(path) as f:
+        examples = json.load(f)  # list of {"nl": "...", "sql": "..."}
+    return examples
+
+def get_top_k_examples(query: str, examples: list, k: int = 3) -> list:
+    query_emb = embedder.encode(query)
+    example_embs = embedder.encode([e["nl"] for e in examples])
+        
+    # Cosine similarity
+    sims = np.dot(example_embs, query_emb) / (
+        np.linalg.norm(example_embs, axis=1) * np.linalg.norm(query_emb)
+    )
+    top_indices = np.argsort(sims)[::-1][:k]
+    return [examples[i] for i in top_indices]
+
+def format_few_shot(examples: list) -> str:
+    shots = []
+    for ex in examples:
+        shots.append(f"Question: {ex['nl']}\nSQL: {ex['sql']}")
+    return "\n\n".join(shots)
 
 
 def generate_sql(nl_query: str, schema_context: list[str]) -> dict:
 
     schema_text = "\n\n".join(schema_context)
 
+    """examples = load_few_shot_examples()
+
+    top_examples = get_top_k_examples(
+        nl_query,
+        examples,
+        k=3
+    )
+    
+    few_shot_text = format_few_shot(top_examples)"""
+
     prompt = f"""
-{SYSTEM_PROMPT}
+    {SYSTEM_PROMPT}
 
-### Schema Context:
-{schema_text}
-
-### Question:
-{nl_query}
-"""
+    
+    ### Schema Context:
+    {schema_text}
+   
+    ### Question:
+    {nl_query}
+    """
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
@@ -79,9 +117,8 @@ def generate_sql(nl_query: str, schema_context: list[str]) -> dict:
 
     return json.loads(raw)
 
-
 # Optional test
-'''if __name__ == "__main__":
+if __name__ == "__main__":
 
     schema_context = [
         """
@@ -106,10 +143,8 @@ def generate_sql(nl_query: str, schema_context: list[str]) -> dict:
 
     result = generate_sql(query, schema_context)
 
-    print(json.dumps(result, indent=4))'''
+    print(json.dumps(result, indent=4))
     
-
-import duckdb
 
 def validate_sql(sql: str):
     try:
@@ -131,29 +166,29 @@ def generate_sql_with_retry(nl_query, schema_context, max_retries=2):
             return result
 
         fix_prompt = f"""
-Fix this SQL query.
+            Fix this SQL query.
 
-Schema:
-{chr(10).join(schema_context)}
+            Schema:
+            {chr(10).join(schema_context)}
 
-Question:
-{nl_query}
+            Question:
+            {nl_query}
 
-Faulty SQL:
-{result['sql']}
+            Faulty SQL:
+            {result['sql']}
 
-Error:
-{error}
+            Error:
+            {error}
 
-Return ONLY JSON:
-{{
-  "sql": "...",
-  "reasoning": "..."
-}}
-"""
+            Return ONLY JSON:
+            {{
+            "sql": "...",
+            "reasoning": "..."
+            }}
+            """
 
         response = client.chat.completions.create(
-            model="llama3-70b-8192",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "user", "content": fix_prompt}
             ]

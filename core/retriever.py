@@ -2,13 +2,17 @@
 from llama_index.core import VectorStoreIndex, StorageContext, Settings
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from sentence_transformers import SentenceTransformer
 import chromadb
-from sympy import re
+import re
 
 Settings.embed_model = HuggingFaceEmbedding(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
+embedder = SentenceTransformer(
+    "sentence-transformers/all-MiniLM-L6-v2"
+)
 
 def build_retriever():
     # Connect to the ChromaDB you built in Phase 1
@@ -41,7 +45,6 @@ class HybridRetriever:
         
         # Tokenize all chunks for BM25
         #tokenized = [chunk.lower().split() for chunk in all_chunks]
-        import re
         tokenized = [re.findall(r"[a-zA-Z_]+", chunk.lower()) for chunk in all_chunks]
         self.bm25 = BM25Okapi(tokenized)
         self.all_chunks = all_chunks
@@ -68,3 +71,26 @@ class HybridRetriever:
         # Sort by fused score, return top_k
         ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
         return [doc for doc, _ in ranked[:top_k]]
+# Add to retriever.py
+
+def retrieve_with_feedback(query: str, hybrid_retriever, top_k=6) -> list[str]:
+    # Regular schema retrieval
+    schema_chunks = hybrid_retriever.retrieve(query, top_k=top_k)
+    
+    # Also check feedback index
+    chroma_client = chromadb.PersistentClient(path="./chroma_db")
+    try:
+        feedback_col = chroma_client.get_collection("feedback_index")
+        query_emb = embedder.encode(query).tolist()
+        
+        feedback_results = feedback_col.query(
+            query_embeddings=[query_emb],
+            n_results=2
+        )
+        
+        feedback_chunks = feedback_results["documents"][0]
+        # Prepend feedback (high priority) before schema chunks
+        return feedback_chunks + schema_chunks
+    except:
+        # If no feedback_index yet, just return schema chunks
+        return schema_chunks
