@@ -1,6 +1,6 @@
 import duckdb
 import pandas as pd
-from data_store import get_connection
+from core.data_store import get_connection
 
 ROW_CAP = 30
 
