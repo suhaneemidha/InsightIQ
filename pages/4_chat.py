@@ -70,3 +70,17 @@ if prompt := st.chat_input("Ask a question about the dataset..."):
             "content": response
         }
     )
+    
+
+def render_sql_panel(sql: str, insights: list[str]):
+    with st.expander("🔍 How this was generated", expanded=False):
+        st.subheader("SQL Query")
+        st.code(sql, language="sql")
+        
+        # Copy button (Streamlit doesn't have one natively, use a workaround)
+        st.button("📋 Copy SQL", on_click=lambda: st.write("Copied!"))
+        
+        if insights:
+            st.subheader("💡 Key Insights")
+            for insight in insights:
+                st.markdown(insight)
