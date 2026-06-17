@@ -12,7 +12,6 @@ load_dotenv()
 client = Groq(
     api_key=os.getenv("GROQ_API_KEY")
 )
-
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
 SYSTEM_PROMPT = """
@@ -43,14 +42,15 @@ Format:
 Do not surround the JSON with markdown code blocks.
 Do not write any extra explanation before or after the JSON.
 """
-def load_few_shot_examples(path="golden_queries.json"):
+
+def load_few_shot_examples(path="data/golden_queries.json"):
     with open(path) as f:
-        examples = json.load(f)  # list of {"nl": "...", "sql": "..."}
+        examples = json.load(f)  # list of {"nl_query": "...", "sql": "..."}
     return examples
 
 def get_top_k_examples(query: str, examples: list, k: int = 3) -> list:
     query_emb = embedder.encode(query)
-    example_embs = embedder.encode([e["nl"] for e in examples])
+    example_embs = embedder.encode([e["nl_query"] for e in examples])
         
     # Cosine similarity
     sims = np.dot(example_embs, query_emb) / (
@@ -62,7 +62,7 @@ def get_top_k_examples(query: str, examples: list, k: int = 3) -> list:
 def format_few_shot(examples: list) -> str:
     shots = []
     for ex in examples:
-        shots.append(f"Question: {ex['nl']}\nSQL: {ex['sql']}")
+        shots.append(f"Question: {ex['nl_query']}\nSQL: {ex['sql']}")
     return "\n\n".join(shots)
 
 
@@ -70,7 +70,7 @@ def generate_sql(nl_query: str, schema_context: list[str]) -> dict:
 
     schema_text = "\n\n".join(schema_context)
 
-    """examples = load_few_shot_examples()
+    examples = load_few_shot_examples()
 
     top_examples = get_top_k_examples(
         nl_query,
@@ -78,11 +78,13 @@ def generate_sql(nl_query: str, schema_context: list[str]) -> dict:
         k=3
     )
     
-    few_shot_text = format_few_shot(top_examples)"""
+    few_shot_text = format_few_shot(top_examples)
 
     prompt = f"""
     {SYSTEM_PROMPT}
 
+    ### Similar Examples:
+    {few_shot_text}
     
     ### Schema Context:
     {schema_text}
