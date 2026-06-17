@@ -1,5 +1,7 @@
 import streamlit as st
-from core.llm import ask_llm
+from core.pipeline import run_pipeline
+
+
 
 st.set_page_config(
     page_title="InsightIQ Chat",
@@ -56,11 +58,52 @@ if prompt := st.chat_input("Ask a question about the dataset..."):
 
     # Assistant response
     with st.chat_message("assistant"):
+
         with st.spinner("Thinking..."):
+
             try:
-                response = ask_llm(prompt)
+
+                pipeline_result = run_pipeline(prompt)
+
+                sql = pipeline_result["sql_result"]["sql"]
+                execution = pipeline_result["execution_result"]
+                insights = pipeline_result["insights"]
+
+                st.code(sql, language="sql")
+
+                if execution["success"]:
+
+                    st.dataframe(
+                        execution["data"],
+                        use_container_width=True
+                    )
+
+                    if insights:
+
+                        st.subheader("💡 Insights")
+
+                        for insight in insights:
+                            st.markdown(f"- {insight}")
+
+                    response = (
+                        f"✅ Query executed successfully.\n\n"
+                        f"Rows returned: {execution['row_count']}"
+                    )
+
+                else:
+
+                    response = (
+                        f"❌ SQL execution failed:\n\n"
+                        f"{execution['error']}"
+                    )
+
+                    st.error(response)
+
             except Exception as e:
-                response = f"❌ Error: {str(e)}"
+
+                response = f"❌ Error:\n\n{str(e)}"
+
+                st.error(response)
 
         st.markdown(response)
 
@@ -70,17 +113,3 @@ if prompt := st.chat_input("Ask a question about the dataset..."):
             "content": response
         }
     )
-    
-
-def render_sql_panel(sql: str, insights: list[str]):
-    with st.expander("🔍 How this was generated", expanded=False):
-        st.subheader("SQL Query")
-        st.code(sql, language="sql")
-        
-        # Copy button (Streamlit doesn't have one natively, use a workaround)
-        st.button("📋 Copy SQL", on_click=lambda: st.write("Copied!"))
-        
-        if insights:
-            st.subheader("💡 Key Insights")
-            for insight in insights:
-                st.markdown(insight)
