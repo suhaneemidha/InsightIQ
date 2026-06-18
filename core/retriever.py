@@ -232,3 +232,52 @@ def retrieve_with_feedback(
         )
 
         return schema_chunks
+    
+def retrieve_schema_with_scores(
+    query: str,
+    retriever
+) -> tuple[list[str], list[float]]:
+    """
+    Same as retrieve_schema but also returns similarity scores.
+    
+    Returns
+    -------
+    chunks  : list of text strings (schema context)
+    scores  : list of floats (0 to 1, higher = more similar)
+    """
+    nodes = retriever.retrieve(query)
+
+    chunks = [node.get_content() for node in nodes]
+
+    # node.score is the cosine similarity from ChromaDB
+    # It's a float between 0 and 1
+    scores = [node.score if node.score is not None else 0.0 for node in nodes]
+
+    return chunks, scores
+
+def check_feedback_hit(query: str) -> bool:
+    """
+    Returns True if feedback_index has at least one similar past correction.
+    Returns False if feedback_index is empty or no relevant results found.
+    """
+    try:
+        chroma_client = chromadb.PersistentClient(path="vector_db")
+        feedback_col = chroma_client.get_collection("feedback_index")
+
+        query_embedding = embedder.encode(query).tolist()
+
+        results = feedback_col.query(
+            query_embeddings=[query_embedding],
+            n_results=1
+        )
+
+        # If distances list is not empty and top result is close enough
+        distances = results.get("distances", [[]])[0]
+        if distances and distances[0] < 0.5:  # 0.5 = similar enough threshold
+            return True
+        return False
+
+    except Exception:
+        # feedback_index doesn't exist yet = no hits
+        return False
+    

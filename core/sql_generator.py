@@ -37,8 +37,13 @@ Format:
 {
   "sql": "<your SQL here>",
   "tables_used": ["table1", "table2"],
-  "reasoning": "brief explanation"
+  "reasoning": "brief explanation",
+  "llm_confidence": 85
 }
+
+llm_confidence is a number from 0 to 100 representing how confident you are
+that your SQL correctly answers the question given the schema provided.
+100 = completely certain. 0 = completely guessing.
 
 Do not surround the JSON with markdown code blocks.
 Do not write any extra explanation before or after the JSON.
