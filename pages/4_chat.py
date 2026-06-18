@@ -85,6 +85,60 @@ if prompt := st.chat_input("Ask a question about the dataset..."):
                         for insight in insights:
                             st.markdown(f"- {insight}")
 
+                    
+                    if "confidence" in pipeline_result:
+
+                        score = pipeline_result["confidence"]["score"]
+                        signals = pipeline_result["confidence"]["signals"]
+
+                        if score >= 80:
+                            color = "green"
+                            label = "High Confidence"
+
+                        elif score >= 55:
+                            color = "orange"
+                            label = "Medium Confidence"
+
+                        else:
+                            color = "red"
+                            label = "Low Confidence"
+
+                        st.markdown(
+                            f"""
+                            <div style="
+                                display:inline-block;
+                                background-color:{color};
+                                color:white;
+                                padding:6px 16px;
+                                border-radius:20px;
+                                font-weight:bold;
+                                font-size:14px;
+                            ">
+                                {label}: {score}/100
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
+                        with st.expander("See confidence breakdown"):
+
+                            st.write(
+                                f"**Retrieval quality:** {signals['retrieval']}/30"
+                            )
+
+                            st.write(
+                                f"**SQL validity:** {signals['sql_validity']}/30"
+                            )
+
+                            st.write(
+                                f"**LLM confidence:** {signals['llm_confidence']}/20"
+                            )
+
+                            st.write(
+                                f"**Feedback match:** {signals['feedback_match']}/20"
+                            )
+
+
                     response = (
                         f"✅ Query executed successfully.\n\n"
                         f"Rows returned: {execution['row_count']}"
