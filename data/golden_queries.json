@@ -138,5 +138,45 @@
     "sql": "SELECT c.customer_state,ROUND(AVG(DATEDIFF('day',STRPTIME(o.order_purchase_timestamp, '%d-%m-%Y %H:%M'),STRPTIME(o.order_delivered_customer_date, '%d-%m-%Y %H:%M'))),1) AS avg_delivery_days FROM orders o JOIN customers c ON o.customer_id = c.customer_id WHERE o.order_delivered_customer_date IS NOT NULL GROUP BY c.customer_state ORDER BY avg_delivery_days",
     "tables_used": ["orders", "customers"],
     "difficulty": "medium"
+  },
+  {
+    "nl_query": "Which sellers have total revenue greater than 10000?",
+    "sql": "SELECT oi.seller_id, SUM(oi.price) AS total_revenue FROM order_items oi GROUP BY oi.seller_id HAVING SUM(oi.price) > 10000 ORDER BY total_revenue DESC"
+  },
+  {
+    "nl_query": "List customers who placed more than 3 orders",
+    "sql": "SELECT customer_id, COUNT(order_id) AS order_count FROM orders GROUP BY customer_id HAVING COUNT(order_id) > 3 ORDER BY order_count DESC"
+  },
+  {
+    "nl_query": "What is the average payment value for orders placed in 2018?",
+    "sql": "SELECT AVG(p.payment_value) AS avg_payment FROM payments p JOIN orders o ON p.order_id = o.order_id WHERE YEAR(CAST(o.order_purchase_timestamp AS TIMESTAMP)) = 2018"
+  },
+  {
+    "nl_query": "How many orders were placed each month in 2017?",
+    "sql": "SELECT MONTH(CAST(order_purchase_timestamp AS TIMESTAMP)) AS month, COUNT(*) AS order_count FROM orders WHERE YEAR(CAST(order_purchase_timestamp AS TIMESTAMP)) = 2017 GROUP BY month ORDER BY month"
+  },
+  {
+    "nl_query": "Which product categories have an average review score below 3.5?",
+    "sql": "SELECT p.product_category_name, AVG(r.review_score) AS avg_score FROM reviews r JOIN order_items oi ON r.order_id = oi.order_id JOIN products p ON oi.product_id = p.product_id GROUP BY p.product_category_name HAVING AVG(r.review_score) < 3.5 ORDER BY avg_score ASC"
+  },
+  {
+    "nl_query": "What is the total freight value paid per state?",
+    "sql": "SELECT c.customer_state, SUM(oi.freight_value) AS total_freight FROM order_items oi JOIN orders o ON oi.order_id = o.order_id JOIN customers c ON o.customer_id = c.customer_id GROUP BY c.customer_state ORDER BY total_freight DESC"
+  },
+  {
+    "nl_query": "Find all orders where payment was made in more than one installment",
+    "sql": "SELECT order_id, payment_installments, payment_value FROM payments WHERE payment_installments > 1 ORDER BY payment_installments DESC"
+  },
+  {
+    "nl_query": "Which sellers are located in Sao Paulo?",
+    "sql": "SELECT seller_id, seller_city, seller_state FROM sellers WHERE LOWER(seller_city) = 'sao paulo'"
+  },
+  {
+    "nl_query": "What is the average number of items per order?",
+    "sql": "SELECT AVG(item_count) AS avg_items_per_order FROM (SELECT order_id, COUNT(*) AS item_count FROM order_items GROUP BY order_id) subq"
+  },
+  {
+    "nl_query": "List the top 5 most reviewed product categories",
+    "sql": "SELECT p.product_category_name, COUNT(r.review_id) AS review_count FROM reviews r JOIN order_items oi ON r.order_id = oi.order_id JOIN products p ON oi.product_id = p.product_id GROUP BY p.product_category_name ORDER BY review_count DESC LIMIT 5"
   }
 ]

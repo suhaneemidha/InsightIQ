@@ -1,4 +1,4 @@
-from retriever import build_retriever, HybridRetriever
+from core.retriever import build_retriever, HybridRetriever
 import chromadb
 import json
 

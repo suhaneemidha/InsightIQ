@@ -7,7 +7,7 @@ from sentence_transformers import SentenceTransformer
 
 
 DB_PATH = "feedback.db"
-CHROMA_PATH = "./chroma_db"
+CHROMA_PATH = "./vector_db"
 EMBED_MODEL = "all-MiniLM-L6-v2"
 
 
@@ -36,21 +36,22 @@ class FeedbackSQLStore:
 
     def save(self, original_query: str, generated_sql: str,
              corrected_sql: str, admin_id: str = "admin"):
-
-        conn = sqlite3.connect(self.db_path)
-        conn.execute("""
-            INSERT INTO corrections
-            (original_query, generated_sql, corrected_sql, timestamp, admin_id)
-            VALUES (?, ?, ?, ?, ?)
-        """, (
-            original_query,
-            generated_sql,
-            corrected_sql,
-            datetime.now().isoformat(),
-            admin_id
-        ))
-        conn.commit()
-        conn.close()
+        try:
+            conn = sqlite3.connect(self.db_path)
+            conn.execute("""
+                INSERT INTO corrections
+                (original_query, generated_sql, corrected_sql, timestamp, admin_id)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                original_query,
+                generated_sql,
+                corrected_sql,
+                datetime.now().isoformat(),
+                admin_id
+            ))
+            conn.commit()
+        finally:
+            conn.close()
 
 
 # ----------------------------

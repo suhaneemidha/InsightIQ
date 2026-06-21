@@ -46,6 +46,28 @@ that your SQL correctly answers the question given the schema provided.
 
 Do not surround the JSON with markdown code blocks.
 Do not write any extra explanation before or after the JSON.
+
+ONLY use tables explicitly listed in schema context.
+
+Never invent tables.
+
+INVALID examples:
+sales
+deliveries
+revenue_table
+transactions
+
+VALID examples:
+orders
+customers
+products
+order_items
+payments
+reviews
+sellers
+
+If a required table is not present,
+do not create one.
 """
 
 def load_few_shot_examples(path="data/golden_queries.json"):

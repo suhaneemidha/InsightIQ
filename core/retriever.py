@@ -11,6 +11,13 @@ import chromadb
 import numpy as np
 import re
 
+from groq import Groq
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
+_groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
 # embedding model used by llamaindex
 Settings.embed_model = HuggingFaceEmbedding(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
@@ -281,3 +288,92 @@ def check_feedback_hit(query: str) -> bool:
         # feedback_index doesn't exist yet = no hits
         return False
     
+def generate_hypothetical_sql(query: str) -> str:
+    """
+    HyDE Step 1: Ask the LLM to write a hypothetical SQL query
+    for the user's question WITHOUT giving it any schema.
+    
+    We don't care if the SQL is correct — we just want something
+    that looks like SQL so the embedding is closer to schema chunks.
+    
+    Example:
+        query  = "top 5 sellers by revenue"
+        output = "SELECT seller_id, SUM(price) AS revenue 
+                  FROM order_items 
+                  GROUP BY seller_id 
+                  ORDER BY revenue DESC LIMIT 5"
+    """
+    prompt = f"""Write a short DuckDB SQL query that would answer this question.
+Use generic table and column names — don't worry about being exactly right.
+Return ONLY the SQL. No explanation. No markdown.
+
+Question: {query}"""
+
+    try:
+        response = _groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0,
+            max_tokens=150   # SQL should be short
+        )
+        hypothetical_sql = response.choices[0].message.content.strip()
+
+        # Strip markdown code fences if the LLM added them anyway
+        if hypothetical_sql.startswith("```"):
+            hypothetical_sql = hypothetical_sql.replace("```sql", "")
+            hypothetical_sql = hypothetical_sql.replace("```", "")
+            hypothetical_sql = hypothetical_sql.strip()
+
+        print(f"[HyDE] Hypothetical SQL: {hypothetical_sql[:100]}...")
+        return hypothetical_sql
+
+    except Exception as e:
+        print(f"[HyDE] Failed to generate hypothetical SQL: {e}")
+        # Fall back to original query if LLM call fails
+        return query
+    
+def retrieve_schema_with_scores_hyde(
+    query: str,
+    retriever
+) -> tuple[list[str], list[float]]:
+    """
+    HyDE version of retrieve_schema_with_scores.
+    
+    Instead of embedding the raw NL query, we:
+    1. Generate a hypothetical SQL for the query
+    2. Embed the hypothetical SQL
+    3. Use that embedding to search ChromaDB
+    
+    Returns same format as retrieve_schema_with_scores:
+    (chunks, scores)
+    """
+
+    # Step 1: Generate hypothetical SQL
+    hypothetical_sql = generate_hypothetical_sql(query)
+
+    # Step 2: Embed the hypothetical SQL using the same embedder
+    # (the global `embedder` SentenceTransformer at top of this file)
+    hyde_embedding = embedder.encode(hypothetical_sql).tolist()
+
+    # Step 3: Query ChromaDB directly with the HyDE embedding
+    # (bypassing LlamaIndex so we can pass our own embedding)
+    chroma_client = chromadb.PersistentClient(path="vector_db")
+    collection = chroma_client.get_collection("schema_metadata")
+
+    results = collection.query(
+        query_embeddings=[hyde_embedding],
+        n_results=5,
+        include=["documents", "distances"]
+    )
+
+    chunks = results["documents"][0]      # list of text strings
+    distances = results["distances"][0]   # list of floats (lower = more similar in ChromaDB)
+
+    # ChromaDB returns L2 distances (lower = closer).
+    # Convert to similarity scores (higher = better) so our confidence scorer works.
+    # Formula: similarity = 1 / (1 + distance)
+    scores = [1 / (1 + d) for d in distances]
+
+    print(f"[HyDE] Top similarity after HyDE: {scores[0]:.3f} (was raw NL query before)")
+
+    return chunks, scores

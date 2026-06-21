@@ -7,7 +7,9 @@ from core.retriever import (
     build_hybrid_retriever,
     retrieve_schema_with_scores,
     check_feedback_hit,
-    retrieve_with_feedback
+    retrieve_with_feedback,
+    retrieve_schema_with_scores_hyde 
+    
 )
 from core.sql_generator import generate_sql_with_retry
 from core.query_engine import execute_sql
@@ -45,15 +47,26 @@ def run_pipeline(question: str) -> dict:
     # AND the similarity scores (floats 0-1).
     # We need the scores for the confidence scorer.
 
-    schema_chunks, retrieval_scores = retrieve_schema_with_scores(
-        question,
-        retriever.dense_retriever   # pass the dense retriever
-    )
+    # HyDE retrieval — generates hypothetical SQL first, then embeds it
+    # Falls back to regular retrieval if HyDE fails
+    try:
+        schema_chunks, retrieval_scores = retrieve_schema_with_scores_hyde(
+            question,
+            retriever.dense_retriever
+        )
+        print("[Pipeline] Using HyDE retrieval.")
+    except Exception as e:
+        print(f"[Pipeline] HyDE failed ({e}), falling back to regular retrieval.")
+        schema_chunks, retrieval_scores = retrieve_schema_with_scores(
+            question,
+            retriever.dense_retriever
+        )
 
     print(f"[Pipeline] Retrieved {len(schema_chunks)} schema chunks.")
     print(f"[Pipeline] Top similarity score: {retrieval_scores[0] if retrieval_scores else 'N/A'}")
 
     # Also get feedback-augmented context for the actual SQL generation
+    
     full_context = retrieve_with_feedback(question, retriever)
 
     # -------------------------------------------------------
