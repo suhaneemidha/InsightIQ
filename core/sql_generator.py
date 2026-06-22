@@ -1,11 +1,13 @@
 import os
 import json
-import duckdb
 import numpy as np
 
+from core.query_history import get_few_shot_pool
 from sentence_transformers import SentenceTransformer
 from groq import Groq
 from dotenv import load_dotenv
+from core.data_store import get_connection
+
 
 load_dotenv()
 
@@ -73,7 +75,7 @@ Format:
   "sql": "<your SQL here>",
   "tables_used": ["table1", "table2"],
   "reasoning": "brief explanation",
-  "llm_confidence": 85
+  "llm_confidence": 70
 }
 
 llm_confidence is a number from 0 to 100 representing how confident you are
@@ -131,6 +133,8 @@ def load_few_shot_examples(path="data/golden_queries.json"):
 
 def get_top_k_examples(query: str, examples: list, k: int = 3) -> list:
     query_emb = embedder.encode(query)
+    if not examples:
+        return []
     example_embs = embedder.encode([e["nl_query"] for e in examples])
         
     # Cosine similarity
@@ -151,7 +155,9 @@ def generate_sql(nl_query: str, schema_context: list[str]) -> dict:
 
     schema_text = "\n\n".join(schema_context)
 
-    examples = load_few_shot_examples()
+    golden_examples = load_few_shot_examples()
+    history_examples = get_few_shot_pool(limit=50)
+    examples = golden_examples + history_examples
 
     top_examples = get_top_k_examples(
         nl_query,
@@ -198,55 +204,52 @@ def generate_sql(nl_query: str, schema_context: list[str]) -> dict:
         raw = raw.replace("```", "")
         raw = raw.strip()
 
-    return json.loads(raw)
-
-# Optional test
-if __name__ == "__main__":
-
-    schema_context = [
-        """
-        Table: customers
-        Columns:
-        customer_id INTEGER
-        customer_name VARCHAR
-        city VARCHAR
-        """,
-
-        """
-        Table: orders
-        Columns:
-        order_id INTEGER
-        customer_id INTEGER
-        amount DOUBLE
-        order_date DATE
-        """
-    ]
-
-    query = "Show total amount spent by each customer."
-
-    result = generate_sql(query, schema_context)
-
-    print(json.dumps(result, indent=4))
-    
-
-def validate_sql(sql: str):
     try:
-        conn = duckdb.connect("olist.db", read_only=True)
+        result= json.loads(raw)
+
+    except Exception as e:
+
+        print(
+            f"[SQL Generator] Failed to parse JSON: {e}"
+        )
+
+        result= {
+            "sql": "",
+            "tables_used": [],
+            "reasoning": "JSON parse failed",
+            "llm_confidence": 0
+        }
+    return result
+    
+    
+def validate_sql(sql: str):
+    conn = None
+    try:
+        conn = get_connection(read_only=True)
         conn.execute(f"EXPLAIN {sql}")
         return True, ""
     except Exception as e:
         return False, str(e)
+    finally:
+        if conn:
+            conn.close()
 
 
 def generate_sql_with_retry(nl_query, schema_context, max_retries=2):
     result = generate_sql(nl_query, schema_context)
 
     for i in range(max_retries):
-        ok, error = validate_sql(result["sql"])
+        sql = result.get("sql", "")
 
-        if ok:
+        if not sql:
             result["attempts"] = i + 1
             return result
+        else:
+            ok, error = validate_sql(sql)
+
+            if ok:
+                result["attempts"] = i + 1
+                return result
 
         
         fix_prompt = f"""
@@ -271,8 +274,15 @@ def generate_sql_with_retry(nl_query, schema_context, max_retries=2):
             Return ONLY JSON:
 
             {{
+<<<<<<< HEAD
                 "sql":"...",
                 "reasoning":"..."
+=======
+            "sql": "...",
+            "tables_used": [],
+            "reasoning": "...",
+            "llm_confidence":70
+>>>>>>> mihika
             }}
             """
 
@@ -282,11 +292,29 @@ def generate_sql_with_retry(nl_query, schema_context, max_retries=2):
                 {"role": "user", "content": fix_prompt}
             ]
         )
-
         raw = response.choices[0].message.content.strip()
 
-        if raw.startswith("{"):
-            result = json.loads(raw)
+        if raw.startswith("```"):
+            raw = raw.replace("```json", "")
+            raw = raw.replace("```", "")
+            raw = raw.strip()
+
+        try:
+            result= json.loads(raw)
+
+        except Exception as e:
+
+            print(
+                f"[SQL Generator] Failed to parse JSON: {e}"
+            )
+
+            result= {
+                "sql": "",
+                "tables_used": [],
+                "reasoning": "JSON parse failed",
+                "llm_confidence": 0
+            }
+    
 
     result["attempts"] = max_retries + 1
     return result
