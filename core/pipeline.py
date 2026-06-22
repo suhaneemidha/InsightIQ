@@ -3,11 +3,11 @@
 # returns SQL, data, insights, and confidence score.
 
 import time
+import chromadb
+from core.retriever import embedder
 from core.retriever import (
     build_hybrid_retriever,
-    retrieve_schema_with_scores,
     check_feedback_hit,
-    retrieve_with_feedback,
     retrieve_schema_with_scores_hyde 
     
 )
@@ -43,55 +43,145 @@ def run_pipeline(question: str) -> dict:
     # -------------------------------------------------------
     # STEP 1: Retrieve schema context (with similarity scores)
     # -------------------------------------------------------
-    # retrieve_schema_with_scores returns both the text chunks
+    # HyDE retrieval returns chunks and similarity scores
     # AND the similarity scores (floats 0-1).
     # We need the scores for the confidence scorer.
 
     # HyDE retrieval — generates hypothetical SQL first, then embeds it
     # Falls back to regular retrieval if HyDE fails
+
     try:
-        schema_chunks, retrieval_scores = retrieve_schema_with_scores_hyde(
+        # ---------------------------
+        # HyDE Retrieval
+        # ---------------------------
+        hyde_chunks, hyde_scores = retrieve_schema_with_scores_hyde(
             question,
             retriever.dense_retriever
         )
+        retrieval_scores = hyde_scores[:3]
         print("[Pipeline] Using HyDE retrieval.")
+
     except Exception as e:
-        print(f"[Pipeline] HyDE failed ({e}), falling back to regular retrieval.")
-        schema_chunks, retrieval_scores = retrieve_schema_with_scores(
-            question,
-            retriever.dense_retriever
+
+        print(
+            f"[Pipeline] HyDE failed ({e}), using empty HyDE results."
         )
 
-    print(f"[Pipeline] Retrieved {len(schema_chunks)} schema chunks.")
+        hyde_chunks = []
+        retrieval_scores = [0.5]
+        
+    # ---------------------------
+    # Hybrid Retrieval (BM25 + Dense)
+    # ---------------------------
+
+    hybrid_chunks = retriever.retrieve(
+        question,
+        top_k=6
+    )
+
+    # ---------------------------
+    # Merge both retrievals
+    # Remove duplicates while preserving order
+    # ---------------------------
+
+    full_context = list(
+        dict.fromkeys(
+            hyde_chunks + hybrid_chunks
+        )
+    )
+
+    print(
+        f"[Pipeline] HyDE chunks: {len(hyde_chunks)}"
+    )
+
+    print(
+        f"[Pipeline] Hybrid chunks: {len(hybrid_chunks)}"
+    )
+
+    print(
+        f"[Pipeline] Combined chunks: {len(full_context)}"
+    )
+
     print(f"[Pipeline] Top similarity score: {retrieval_scores[0] if retrieval_scores else 'N/A'}")
-
-    # Also get feedback-augmented context for the actual SQL generation
+    feedback_chunks = []
     
-    full_context = retrieve_with_feedback(question, retriever)
+    # Also get feedback-augmented context for the actual SQL generation
+    try:
+        
+        chroma_client = chromadb.PersistentClient(
+            path="vector_db"
+        )
 
-    # -------------------------------------------------------
-    # STEP 2: Check if feedback index has a relevant hit
-    # -------------------------------------------------------
+        feedback_col = chroma_client.get_collection(
+            "feedback_index"
+        )
 
+        query_embedding = embedder.encode(
+            question
+        ).tolist()
+
+        feedback_results = feedback_col.query(
+            query_embeddings=[query_embedding],
+            n_results=2
+        )
+
+        feedback_chunks = feedback_results["documents"][0]
+
+        full_context = list(
+            dict.fromkeys(
+                full_context+feedback_chunks
+            )
+        )
+
+        print(
+            f"[Pipeline] Added {len(feedback_chunks)} feedback chunks."
+        )
+
+    except Exception as e:
+
+        print(
+            f"[Pipeline] No feedback found: {e}"
+        )
+        
+    full_context = full_context[:8]
+    print(
+            f"[Pipeline] Final context size: {len(full_context)}"
+        )
+    # -------------------------------------------------------
+    #  Check if feedback index has a relevant hit
+    # -------------------------------------------------------
+    
     feedback_hit = check_feedback_hit(question)
     print(f"[Pipeline] Feedback hit: {feedback_hit}")
 
     # -------------------------------------------------------
-    # STEP 3: Generate SQL (with retry)
+    # Generate SQL (with retry)
     # -------------------------------------------------------
     # generate_sql_with_retry returns:
     # {sql, tables_used, reasoning, llm_confidence, attempts}
 
-    sql_result = generate_sql_with_retry(question, full_context)
+    sql_start = time.time()
 
-    sql = sql_result["sql"]
+    sql_result = generate_sql_with_retry(
+        question,
+        full_context
+    )
+
+    sql_ms = (time.time() - sql_start) * 1000
+
+    sql = sql_result.get("sql")
+    if not sql:
+        raise ValueError(
+        f"SQL generator returned invalid SQL: {sql_result}"
+    )
+    
     attempts = sql_result.get("attempts", 1)
     llm_confidence = sql_result.get("llm_confidence", 50)  # default 50 if missing
 
     print(f"[Pipeline] SQL generated in {attempts} attempt(s).")
 
     # -------------------------------------------------------
-    # STEP 4: Execute SQL against DuckDB
+    # Execute SQL against DuckDB
     # -------------------------------------------------------
 
     start_time = time.time()
@@ -101,7 +191,7 @@ def run_pipeline(question: str) -> dict:
     print(f"[Pipeline] SQL execution: {'success' if execution_result['success'] else 'failed'} in {execution_ms:.1f}ms")
 
     # -------------------------------------------------------
-    # STEP 5: Generate insights (only if query succeeded)
+    # Generate insights (only if query succeeded)
     # -------------------------------------------------------
 
     insights = []
@@ -110,7 +200,7 @@ def run_pipeline(question: str) -> dict:
         print(f"[Pipeline] Generated {len(insights)} insights.")
 
     # -------------------------------------------------------
-    # STEP 6: Compute confidence score
+    # Compute confidence score
     # -------------------------------------------------------
 
     confidence = compute_confidence(
@@ -124,7 +214,7 @@ def run_pipeline(question: str) -> dict:
     print(f"[Pipeline] Signal breakdown: {confidence['signals']}")
 
     # -------------------------------------------------------
-    # STEP 7: Log to query history (only if SQL succeeded)
+    #  Log to query history (only if SQL succeeded)
     # -------------------------------------------------------
 
     if execution_result["success"]:
@@ -147,14 +237,6 @@ def run_pipeline(question: str) -> dict:
         "sql_result": sql_result,
         "execution_result": execution_result,
         "insights": insights,
-        "confidence": confidence     # <-- new field
+        "confidence": confidence,    # <-- new field
+        "retrieval_scores": retrieval_scores
     }
-
-
-# Quick manual test
-if __name__ == "__main__":
-    result = run_pipeline("Top 5 sellers by revenue")
-    print("\n--- RESULT ---")
-    print("SQL:", result["sql_result"]["sql"])
-    print("Confidence:", result["confidence"])
-    print("Insights:", result["insights"])

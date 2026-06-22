@@ -4,7 +4,7 @@ from llama_index.core import VectorStoreIndex, StorageContext, Settings
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
-from sentence_transformers import SentenceTransformer
+
 from rank_bm25 import BM25Okapi
 
 import chromadb
@@ -14,6 +14,7 @@ import re
 from groq import Groq
 from dotenv import load_dotenv
 import os
+
 load_dotenv()
 
 _groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -24,8 +25,8 @@ Settings.embed_model = HuggingFaceEmbedding(
 )
 
 # embedding model used for feedback retrieval
-embedder = SentenceTransformer(
-    "sentence-transformers/all-MiniLM-L6-v2"
+embedder = HuggingFaceEmbedding(
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
 
@@ -85,10 +86,7 @@ class HybridRetriever:
 
         # tokenize chunks for bm25
         tokenized_chunks = [
-            re.findall(
-                r"[a-zA-Z_]+",
-                chunk.lower()
-            )
+            re.findall(r"[a-zA-Z0-9_]+", chunk.lower())
             for chunk in all_chunks
         ]
 
@@ -115,11 +113,7 @@ class HybridRetriever:
         ]
 
         # sparse retrieval
-        tokenized_query = re.findall(
-            r"[a-zA-Z_]+",
-            query.lower()
-        )
-
+        tokenized_query = re.findall(r"[a-zA-Z0-9_]+", query.lower())
         bm25_scores = self.bm25.get_scores(
             tokenized_query
         )
@@ -141,7 +135,7 @@ class HybridRetriever:
         ):
             scores[doc] = (
                 scores.get(doc, 0)
-                + 1 / (rank + 10)
+                + 1 / (rank + 1)
             )
 
         for rank, doc in enumerate(
@@ -149,7 +143,7 @@ class HybridRetriever:
         ):
             scores[doc] = (
                 scores.get(doc, 0)
-                + 1 / (rank + 10)
+                + 1 / (rank + 1)
             )
 
         ranked = sorted(
@@ -217,19 +211,19 @@ def retrieve_with_feedback(
         ).tolist()
 
         feedback_results = feedback_col.query(
-            query_embeddings=[
-                query_embedding
-            ],
-            n_results=2
-        )
+        query_embeddings=[query_embedding],
+        n_results=2,
+        include=["distances", "documents"]
+)
 
-        feedback_chunks = (
-            feedback_results["documents"][0]
-        )
+        feedback_chunks_raw = feedback_results["documents"][0]
+        distances = feedback_results.get("distances", [[1.0]])[0]
 
+        feedback_chunks = [
+            doc for doc, dist in zip(feedback_chunks_raw, distances)
+        ]
         return (
-            feedback_chunks
-            + schema_chunks
+            feedback_chunks+schema_chunks
         )
 
     except Exception as e:
@@ -280,7 +274,7 @@ def check_feedback_hit(query: str) -> bool:
 
         # If distances list is not empty and top result is close enough
         distances = results.get("distances", [[]])[0]
-        if distances and distances[0] < 0.5:  # 0.5 = similar enough threshold
+        if distances and distances[0] < 0.35:  
             return True
         return False
 
@@ -333,8 +327,7 @@ Question: {query}"""
         return query
     
 def retrieve_schema_with_scores_hyde(
-    query: str,
-    retriever
+    query: str,retriever
 ) -> tuple[list[str], list[float]]:
     """
     HyDE version of retrieve_schema_with_scores.
@@ -350,29 +343,33 @@ def retrieve_schema_with_scores_hyde(
 
     # Step 1: Generate hypothetical SQL
     hypothetical_sql = generate_hypothetical_sql(query)
+    if not hypothetical_sql:
+        hypothetical_sql = query
 
     # Step 2: Embed the hypothetical SQL using the same embedder
     # (the global `embedder` SentenceTransformer at top of this file)
+    
     hyde_embedding = embedder.encode(hypothetical_sql).tolist()
 
     # Step 3: Query ChromaDB directly with the HyDE embedding
     # (bypassing LlamaIndex so we can pass our own embedding)
+    
     chroma_client = chromadb.PersistentClient(path="vector_db")
     collection = chroma_client.get_collection("schema_metadata")
-
+    
     results = collection.query(
         query_embeddings=[hyde_embedding],
         n_results=5,
         include=["documents", "distances"]
     )
-
-    chunks = results["documents"][0]      # list of text strings
+    chunks = results["documents"][0]
     distances = results["distances"][0]   # list of floats (lower = more similar in ChromaDB)
 
     # ChromaDB returns L2 distances (lower = closer).
     # Convert to similarity scores (higher = better) so our confidence scorer works.
     # Formula: similarity = 1 / (1 + distance)
     scores = [1 / (1 + d) for d in distances]
+    scores = [s / max(scores) for s in scores]
 
     print(f"[HyDE] Top similarity after HyDE: {scores[0]:.3f} (was raw NL query before)")
 

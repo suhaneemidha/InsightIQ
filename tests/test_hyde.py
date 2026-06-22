@@ -1,93 +1,103 @@
-# core/test_hyde.py
-# Compares retrieval precision: raw NL query vs HyDE
-# Run this: python core/test_hyde.py
-# Document the results in your write-up.
+# tests/test_hyde.py
+# Run from project root: python3 tests/test_hyde.py
 
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from core.retriever import (
-    build_retriever,
-    retrieve_schema_with_scores,
-    retrieve_schema_with_scores_hyde
-)
+import chromadb
+from sentence_transformers import SentenceTransformer
+from core.retriever import build_retriever, retrieve_schema_with_scores
+from groq import Groq
+from dotenv import load_dotenv
 
-# 5 representative queries from your golden set
+load_dotenv()
+
+_groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+_embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
 TEST_QUERIES = [
-    {
-        "query": "Top 5 sellers by revenue",
-        "expected_tables": ["order_items", "sellers"]
-    },
-    {
-        "query": "Average delivery delay by state",
-        "expected_tables": ["orders", "customers"]
-    },
-    {
-        "query": "Monthly order count for 2017 and 2018",
-        "expected_tables": ["orders"]
-    },
-    {
-        "query": "Which product category has the highest sales",
-        "expected_tables": ["order_items", "products"]
-    },
-    {
-        "query": "Average review score per category",
-        "expected_tables": ["reviews", "order_items", "products"]
-    }
+    {"query": "Top 5 sellers by revenue",              "expected_tables": ["order_items", "sellers"]},
+    {"query": "Average delivery delay by state",        "expected_tables": ["orders", "customers"]},
+    {"query": "Monthly order count for 2017 and 2018", "expected_tables": ["orders"]},
+    {"query": "Which product category has the highest sales", "expected_tables": ["order_items", "products"]},
+    {"query": "Average review score per category",      "expected_tables": ["reviews", "order_items", "products"]},
 ]
 
 
-def check_tables_in_chunks(chunks: list[str], expected_tables: list[str]) -> int:
-    """
-    Returns how many of the expected tables appear in the retrieved chunks.
-    This is our precision metric.
-    """
-    found = 0
-    all_text = " ".join(chunks).lower()
-    for table in expected_tables:
-        if table.lower() in all_text:
-            found += 1
-    return found
+def CountTableHits(Chunks: list[str], Expected: list[str]) -> int:
+    CombinedText = " ".join(Chunks).lower()
+    return sum(1 for Table in Expected if Table.lower() in CombinedText)
 
 
-def run_comparison():
+def GenerateHypotheticalSQL(Query: str) -> str:
+    prompt = f"""Write a short DuckDB SQL query that would answer this question.
+Use generic table and column names. Return ONLY the SQL. No explanation. No markdown.
+
+Question: {Query}"""
+    try:
+        Response = _groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0,
+            max_tokens=150,
+        )
+        SQL = Response.choices[0].message.content.strip()
+        if SQL.startswith("```"):
+            SQL = SQL.replace("```sql", "").replace("```", "").strip()
+        return SQL
+    except Exception as Error:
+        print(f"[HyDE] LLM call failed: {Error}")
+        return Query
+
+
+def RetrieveHyde(Query: str) -> tuple[list[str], list[float]]:
+    HypotheticalSQL = GenerateHypotheticalSQL(Query)
+    Embedding = _embedder.encode(HypotheticalSQL).tolist()
+
+    Collection = chromadb.PersistentClient(path="vector_db").get_collection("schema_metadata")
+    Results = Collection.query(query_embeddings=[Embedding], n_results=5, include=["documents", "distances"])
+
+    Chunks = Results["documents"][0]
+    Scores = [1 / (1 + d) for d in Results["distances"][0]]
+    MaxScore = max(Scores) or 1.0
+    Scores = [s / MaxScore for s in Scores]
+    return Chunks, Scores
+
+
+def RunComparison():
     print("Building retriever...")
-    dense_retriever = build_retriever()
-    print("Retriever ready.\n")
+    Retriever = build_retriever()
+    print("Ready.\n")
 
     print("=" * 60)
-    print(f"{'Query':<45} {'Raw':>6} {'HyDE':>6} {'Better?':>8}")
+    print(f"{'Query':<45} {'Raw':>5} {'HyDE':>5} {'Winner':>8}")
     print("=" * 60)
 
-    raw_total = 0
-    hyde_total = 0
+    RawTotal, HydeTotal = 0, 0
 
-    for item in TEST_QUERIES:
-        query = item["query"]
-        expected = item["expected_tables"]
-        total_expected = len(expected)
+    for Item in TEST_QUERIES:
+        Query, Expected = Item["query"], Item["expected_tables"]
 
-        # Raw NL retrieval
-        raw_chunks, raw_scores = retrieve_schema_with_scores(query, dense_retriever)
-        raw_hits = check_tables_in_chunks(raw_chunks, expected)
+        RawChunks,  RawScores  = retrieve_schema_with_scores(Query, Retriever)
+        HydeChunks, HydeScores = RetrieveHyde(Query)
 
-        # HyDE retrieval
-        hyde_chunks, hyde_scores = retrieve_schema_with_scores_hyde(query, dense_retriever)
-        hyde_hits = check_tables_in_chunks(hyde_chunks, expected)
+        RawHits  = CountTableHits(RawChunks,  Expected)
+        HydeHits = CountTableHits(HydeChunks, Expected)
+        RawTotal  += RawHits
+        HydeTotal += HydeHits
 
-        raw_total += raw_hits
-        hyde_total += hyde_hits
+        Winner = "✅ HyDE" if HydeHits > RawHits else ("— Same" if HydeHits == RawHits else "❌ Raw")
+        Short  = (Query[:43] + "..") if len(Query) > 43 else Query
+        print(f"{Short:<45} {RawHits}/{len(Expected)}  {HydeHits}/{len(Expected)}   {Winner}")
 
-        better = "✅ HyDE" if hyde_hits > raw_hits else ("Same" if hyde_hits == raw_hits else "❌ Raw")
-        short_query = query[:43] + ".." if len(query) > 43 else query
-
-        print(f"{short_query:<45} {raw_hits}/{total_expected}  {hyde_hits}/{total_expected}   {better}")
-
+    TotalExpected = sum(len(i["expected_tables"]) for i in TEST_QUERIES)
     print("=" * 60)
-    print(f"{'TOTAL':<45} {raw_total:>4}   {hyde_total:>4}")
-    print(f"\nHyDE improved retrieval on {hyde_total - raw_total} more table hits.")
-    print("\nSave these numbers — they go in your individual contribution write-up.")
+    print(f"{'TOTAL':<45} {RawTotal:>4}   {HydeTotal:>4}")
+    print(f"\nRaw  : {RawTotal}/{TotalExpected} table hits")
+    print(f"HyDE : {HydeTotal}/{TotalExpected} table hits")
+    print(f"HyDE {'improved' if HydeTotal > RawTotal else 'matched' if HydeTotal == RawTotal else 'underperformed'} by {abs(HydeTotal - RawTotal)} hit(s).")
+    print("\nSave these numbers for your write-up.")
 
 
 if __name__ == "__main__":
-    run_comparison()
+    RunComparison()
