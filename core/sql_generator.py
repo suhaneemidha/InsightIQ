@@ -30,6 +30,42 @@ IMPORTANT RULES:
 - If multiple tables are needed, use appropriate JOINs.
 - Keep reasoning brief.
 
+DuckDB Rules:
+- DuckDB DATEDIFF always requires 3 arguments.
+
+IMPORTANT DATE RULES:
+The Olist dataset stores date columns as VARCHAR in DD-MM-YYYY HH:MM format.
+Do NOT use CAST(column AS TIMESTAMP).
+Always convert dates using:
+STRPTIME(column, '%d-%m-%Y %H:%M')
+
+before using:
+- DATEDIFF
+- DATE_TRUNC
+- EXTRACT
+- any date arithmetic
+
+Examples:
+
+Wrong:
+DATEDIFF(
+CAST(order_delivered_customer_date AS TIMESTAMP),
+CAST(order_estimated_delivery_date AS TIMESTAMP)
+)
+
+Correct:
+DATEDIFF(
+'day',
+STRPTIME(
+order_estimated_delivery_date,
+'%d-%m-%Y %H:%M'
+),
+STRPTIME(
+order_delivered_customer_date,
+'%d-%m-%Y %H:%M'
+)
+)
+
 Respond ONLY in valid JSON.
 
 Format:
@@ -65,6 +101,24 @@ order_items
 payments
 reviews
 sellers
+
+IMPORTANT OLIST RELATIONSHIPS:
+orders.customer_id = customers.customer_id
+customers.customer_zip_code_prefix = geolocation.geolocation_zip_code_prefix
+orders.order_id = order_items.order_id
+order_items.product_id = products.product_id
+order_items.seller_id = sellers.seller_id
+reviews.order_id = orders.order_id
+Never use CAST(customer_id AS INTEGER).
+Never use SUBSTR(customer_id).
+
+IMPORTANT:
+customer_id is a UUID string.
+customer_zip_code_prefix is a BIGINT zip code.
+Never CAST customer_id to INTEGER.
+Never use SUBSTR(customer_id).
+Never join orders directly to geolocation.
+
 
 If a required table is not present,
 do not create one.
@@ -194,25 +248,31 @@ def generate_sql_with_retry(nl_query, schema_context, max_retries=2):
             result["attempts"] = i + 1
             return result
 
+        
         fix_prompt = f"""
-            Fix this SQL query.
+            {SYSTEM_PROMPT}
 
-            Schema:
-            {chr(10).join(schema_context)}
+            Fix this SQL query.
 
             Question:
             {nl_query}
 
+            Schema:
+            {chr(10).join(schema_context)}
+
             Faulty SQL:
             {result['sql']}
 
-            Error:
+            DuckDB Error:
             {error}
 
+            Correct the SQL.
+
             Return ONLY JSON:
+
             {{
-            "sql": "...",
-            "reasoning": "..."
+                "sql":"...",
+                "reasoning":"..."
             }}
             """
 

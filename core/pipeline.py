@@ -68,6 +68,10 @@ def run_pipeline(question: str) -> dict:
     # Also get feedback-augmented context for the actual SQL generation
     
     full_context = retrieve_with_feedback(question, retriever)
+    print("\nFULL CONTEXT")
+    for chunk in full_context:
+        print(chunk)
+    print("\n")
 
     # -------------------------------------------------------
     # STEP 2: Check if feedback index has a relevant hit

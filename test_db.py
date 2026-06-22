@@ -1,7 +1,13 @@
-import duckdb
+from core.data_store import get_connection
 
-con = duckdb.connect("olist.db")
+conn = get_connection()
 
-print(con.execute("SHOW TABLES").fetchall())
+result = conn.execute("""
+SELECT order_estimated_delivery_date
+FROM orders
+LIMIT 5;
+""").fetchdf()
 
-con.close()
+print(result)
+
+conn.close()

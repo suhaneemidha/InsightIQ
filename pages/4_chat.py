@@ -35,23 +35,46 @@ if "messages" not in st.session_state:
         }
     ]
 
+# Initialize pending followup
+if "pending_followup" not in st.session_state:
+    st.session_state.pending_followup = None
+
+if "followups" not in st.session_state:
+    st.session_state.followups = []
+
 # Display chat history
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Handle follow-up chip clicks
-if "pending_followup" in st.session_state and st.session_state.pending_followup:
-    followup_q = st.session_state.pending_followup
-    st.session_state.pending_followup = None   # clear it
+# Display saved followup buttons
+if st.session_state.followups:
 
-    # Treat it exactly like a user typed it
-    st.session_state.messages.append({"role": "user", "content": followup_q})
-    # Rerun will now show it in chat and the user can submit
-    # (We can't auto-run it without a second rerun cycle, so we just pre-fill the last message)
+    st.markdown("### You might also want to ask:")
+
+    for q in st.session_state.followups:
+
+        if st.button(q, key=q):
+
+            st.session_state.pending_followup = q
+
+            st.rerun()
+
+# Normal chat input
+prompt = st.chat_input(
+    "Ask a question about the dataset..."
+)
+
+# Override prompt if followup button was clicked
+if st.session_state.pending_followup:
+
+    prompt = st.session_state.pending_followup
+
+    st.session_state.pending_followup = None
+
     
 # Chat input
-if prompt := st.chat_input("Ask a question about the dataset..."):
+if prompt:
 
     # User message
     st.session_state.messages.append(
@@ -156,24 +179,8 @@ if prompt := st.chat_input("Ask a question about the dataset..."):
                         df_preview = execution["data"].head(5).to_string(index=False)
 
                         followups = generate_followup_questions(prompt, df_preview)
-
-                        if followups:
-                            st.markdown("**You might also want to ask:**")
-                            col1, col2 = st.columns(2)
-
-                            with col1:
-                                if st.button(f"💬 {followups[0]}", key="followup_0"):
-                                    # Pre-fill the chat with this question
-                                    # Streamlit doesn't allow programmatic chat_input fill,
-                                    # so we store it in session state and show it as a new message
-                                    st.session_state.pending_followup = followups[0]
-                                    st.rerun()
-
-                            with col2:
-                                if len(followups) > 1:
-                                    if st.button(f"💬 {followups[1]}", key="followup_1"):
-                                        st.session_state.pending_followup = followups[1]
-                                        st.rerun()
+                        st.session_state.followups = followups
+                        print(st.session_state.followups)
                     
                     
                     if insights:
