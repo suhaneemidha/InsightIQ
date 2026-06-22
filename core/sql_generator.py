@@ -274,15 +274,10 @@ def generate_sql_with_retry(nl_query, schema_context, max_retries=2):
             Return ONLY JSON:
 
             {{
-<<<<<<< HEAD
-                "sql":"...",
-                "reasoning":"..."
-=======
             "sql": "...",
             "tables_used": [],
             "reasoning": "...",
             "llm_confidence":70
->>>>>>> mihika
             }}
             """
 

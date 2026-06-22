@@ -105,20 +105,12 @@ def run_pipeline(question: str) -> dict:
     print(f"[Pipeline] Top similarity score: {retrieval_scores[0] if retrieval_scores else 'N/A'}")
     feedback_chunks = []
     
-<<<<<<< HEAD
-    full_context = retrieve_with_feedback(question, retriever)
-    print("\nFULL CONTEXT")
-    for chunk in full_context:
-        print(chunk)
-    print("\n")
-=======
     # Also get feedback-augmented context for the actual SQL generation
     try:
         
         chroma_client = chromadb.PersistentClient(
             path="vector_db"
         )
->>>>>>> mihika
 
         feedback_col = chroma_client.get_collection(
             "feedback_index"
