@@ -43,22 +43,44 @@ if "followups" not in st.session_state:
     st.session_state.followups = []
 
 # Display chat history
-for msg in st.session_state.messages:
+for idx, msg in enumerate(st.session_state.messages):
+    
     with st.chat_message(msg["role"]):
+
         st.markdown(msg["content"])
 
-# Display saved followup buttons
-if st.session_state.followups:
+        if msg["role"] == "assistant":
 
-    st.markdown("### You might also want to ask:")
+            if msg.get("sql"):
+                st.code(msg["sql"], language="sql")
 
-    for q in st.session_state.followups:
+            if msg.get("data") is not None:
+                st.dataframe(
+                    msg["data"],
+                    use_container_width=True
+                )
 
-        if st.button(q, key=q):
+            if msg.get("confidence"):
 
-            st.session_state.pending_followup = q
+                score = msg["confidence"]["score"]
 
-            st.rerun()
+                st.caption(
+                    f"Confidence Score: {score}/100"
+                )
+
+            if msg.get("followups"):
+
+                st.markdown("#### Related Questions")
+
+                for j, q in enumerate(msg["followups"]):
+
+                    if st.button(
+                        q,
+                        key=f"history_followup_{idx}_{j}"
+                    ):
+                        st.session_state.pending_followup = q
+                        st.rerun()
+
 
 # Normal chat input
 prompt = st.chat_input(
@@ -67,11 +89,17 @@ prompt = st.chat_input(
 
 # Override prompt if followup button was clicked
 if st.session_state.pending_followup:
-
+    
     prompt = st.session_state.pending_followup
 
     st.session_state.pending_followup = None
 
+    st.session_state.messages.append(
+        {
+            "role": "user",
+            "content": prompt
+        }
+    )
     
 # Chat input
 if prompt:
@@ -176,11 +204,29 @@ if prompt:
                     from core.insight_generator import generate_followup_questions
 
                     if execution["success"] and execution["data"] is not None:
+
                         df_preview = execution["data"].head(5).to_string(index=False)
 
-                        followups = generate_followup_questions(prompt, df_preview)
-                        st.session_state.followups = followups
-                        print(st.session_state.followups)
+                        followups = generate_followup_questions(
+                            prompt,
+                            df_preview
+                        )
+
+                        st.session_state.followups = followups or []
+
+                        if st.session_state.followups:
+
+                            st.markdown("---")
+                            st.markdown("### 🔁 Related Questions")
+
+                            for i, q in enumerate(st.session_state.followups):
+
+                                if st.button(
+                                    q,
+                                    key=f"followup_{i}"
+                                ):
+                                    st.session_state.pending_followup = q
+                                    st.rerun()
                     
                     
                     if insights:
@@ -205,8 +251,12 @@ if prompt:
         st.markdown(response)
 
     st.session_state.messages.append(
-        {
-            "role": "assistant",
-            "content": response
-        }
-    )
+    {
+        "role": "assistant",
+        "content": response,
+        "sql": sql,
+        "data": execution["data"] if execution["success"] else None,
+        "confidence": pipeline_result.get("confidence"),
+        "followups": st.session_state.followups
+    }
+)
