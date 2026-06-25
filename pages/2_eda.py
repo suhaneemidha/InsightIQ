@@ -146,9 +146,14 @@ else:
     )
 
 st.plotly_chart(
+
     fig,
     use_container_width=True,
     config={"displayModeBar": False}
+
+    fig1,
+    width='stretch'
+
 )
 
 peak_month = monthly_orders.loc[
@@ -228,6 +233,8 @@ st.plotly_chart(
     fig,
     use_container_width=True,
     config={"displayModeBar": False}
+    fig2,
+    width='stretch'
 )
 
 top_state = states.iloc[0]["customer_state"]
@@ -307,6 +314,8 @@ st.plotly_chart(
     fig,
     use_container_width=True,
     config={"displayModeBar": False}
+    fig3,
+    width='stretch'
 )
 
 top_review = reviews.loc[
@@ -392,6 +401,8 @@ st.plotly_chart(
     fig,
     use_container_width=True,
     config={"displayModeBar": False}
+    fig4,
+    width='stretch'
 )
 
 top_payment = payments.iloc[0]["payment_type"]

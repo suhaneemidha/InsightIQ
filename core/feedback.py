@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List
 
 import chromadb
-from sentence_transformers import SentenceTransformer
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 
 DB_PATH = "feedback.db"
@@ -61,10 +61,10 @@ class FeedbackVectorStore:
     def __init__(self, path: str = CHROMA_PATH, model_name: str = EMBED_MODEL):
         self.client = chromadb.PersistentClient(path=path)
         self.collection = self.client.get_or_create_collection("feedback_index")
-        self.embedder = SentenceTransformer(model_name)
+        self.embedder =  HuggingFaceEmbedding(model_name)
 
     def add(self, original_query: str, corrected_sql: str, metadata: Optional[Dict[str, Any]] = None):
-        embedding = self.embedder.encode(original_query).tolist()
+        embedding = self.embedder.get_query_embedding(original_query)
 
         doc = f"Query: {original_query}\nCorrect SQL: {corrected_sql}"
 
@@ -76,7 +76,7 @@ class FeedbackVectorStore:
         )
 
     def search(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
-        embedding = self.embedder.encode(query).tolist()
+        embedding = self.embedder.get_query_embedding(query)
 
         results = self.collection.query(
             query_embeddings=[embedding],

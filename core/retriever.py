@@ -27,7 +27,7 @@ Settings.embed_model = HuggingFaceEmbedding(
 # embedding model used for feedback retrieval
 embedder = HuggingFaceEmbedding(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
+)   
 
 
 def build_retriever():
@@ -206,9 +206,9 @@ def retrieve_with_feedback(
             "feedback_index"
         )
 
-        query_embedding = embedder.encode(
+        query_embedding = embedder.get_query_embedding(
             query
-        ).tolist()
+        )
 
         feedback_results = feedback_col.query(
         query_embeddings=[query_embedding],
@@ -265,7 +265,7 @@ def check_feedback_hit(query: str) -> bool:
         chroma_client = chromadb.PersistentClient(path="vector_db")
         feedback_col = chroma_client.get_collection("feedback_index")
 
-        query_embedding = embedder.encode(query).tolist()
+        query_embedding = embedder.get_query_embedding(query)
 
         results = feedback_col.query(
             query_embeddings=[query_embedding],
@@ -349,7 +349,7 @@ def retrieve_schema_with_scores_hyde(
     # Step 2: Embed the hypothetical SQL using the same embedder
     # (the global `embedder` SentenceTransformer at top of this file)
     
-    hyde_embedding = embedder.encode(hypothetical_sql).tolist()
+    hyde_embedding = embedder.get_query_embedding(hypothetical_sql)
 
     # Step 3: Query ChromaDB directly with the HyDE embedding
     # (bypassing LlamaIndex so we can pass our own embedding)

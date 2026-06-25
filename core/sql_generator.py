@@ -3,7 +3,7 @@ import json
 import numpy as np
 
 from core.query_history import get_few_shot_pool
-from sentence_transformers import SentenceTransformer
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from groq import Groq
 from dotenv import load_dotenv
 from core.data_store import get_connection
@@ -14,7 +14,7 @@ load_dotenv()
 client = Groq(
     api_key=os.getenv("GROQ_API_KEY")
 )
-embedder = SentenceTransformer("all-MiniLM-L6-v2")
+embedder = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 SYSTEM_PROMPT = """
 You are an expert SQL analyst.
@@ -132,11 +132,11 @@ def load_few_shot_examples(path="data/golden_queries.json"):
     return examples
 
 def get_top_k_examples(query: str, examples: list, k: int = 3) -> list:
-    query_emb = embedder.encode(query)
+    query_emb = embedder.get_query_embedding(query)
     if not examples:
         return []
-    example_embs = embedder.encode([e["nl_query"] for e in examples])
-        
+    example_embs = [embedder.get_query_embedding(e["nl_query"]) for e in examples]
+
     # Cosine similarity
     sims = np.dot(example_embs, query_emb) / (
         np.linalg.norm(example_embs, axis=1) * np.linalg.norm(query_emb)
@@ -151,7 +151,7 @@ def format_few_shot(examples: list) -> str:
     return "\n\n".join(shots)
 
 
-def generate_sql(nl_query: str, schema_context: list[str]) -> dict:
+def generate_sql(nl_query: str, schema_context: list[str],conversation_context="") -> dict:
 
     schema_text = "\n\n".join(schema_context)
 
@@ -167,6 +167,8 @@ def generate_sql(nl_query: str, schema_context: list[str]) -> dict:
     
     few_shot_text = format_few_shot(top_examples)
 
+    conversation_block = f"\n### Conversation History:\n{conversation_context}\n" if conversation_context else ""
+    
     prompt = f"""
     {SYSTEM_PROMPT}
 
@@ -235,8 +237,8 @@ def validate_sql(sql: str):
             conn.close()
 
 
-def generate_sql_with_retry(nl_query, schema_context, max_retries=2):
-    result = generate_sql(nl_query, schema_context)
+def generate_sql_with_retry(nl_query, schema_context,conversation_context: str = "", max_retries=2):
+    result = generate_sql(nl_query, schema_context,conversation_context)
 
     for i in range(max_retries):
         sql = result.get("sql", "")

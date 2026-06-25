@@ -1,5 +1,7 @@
 import streamlit as st
 from core.pipeline import run_pipeline
+from core.insight_generator import generate_followup_questions
+
 
 st.set_page_config(
     page_title="InsightIQ Chat",
@@ -42,6 +44,9 @@ if "pending_followup" not in st.session_state:
 if "followups" not in st.session_state:
     st.session_state.followups = []
 
+if "ConversationHistory" not in st.session_state:
+    st.session_state.ConversationHistory = []   # list of {question, sql, result}
+    
 # Display chat history
 for idx, msg in enumerate(st.session_state.messages):
     
@@ -57,10 +62,10 @@ for idx, msg in enumerate(st.session_state.messages):
             if msg.get("data") is not None:
                 st.dataframe(
                     msg["data"],
-                    use_container_width=True
+                    width='stretch'
                 )
 
-            if msg.get("confidence"):
+            if msg.get("confidence")and isinstance(msg["confidence"], dict):
 
                 score = msg["confidence"]["score"]
 
@@ -119,14 +124,21 @@ if prompt:
     with st.chat_message("assistant"):
 
         with st.spinner("Thinking..."):
+            sql        = None
+            execution  = {"success": False, "data": None, "error": "Pipeline did not run."}
+            insights   = []
+            confidence = None
+            followups  = []
+            response   = ""
 
             try:
 
-                pipeline_result = run_pipeline(prompt)
+                pipeline_result = run_pipeline(prompt, ConversationHistory=st.session_state.ConversationHistory,)
 
                 sql = pipeline_result["sql_result"]["sql"]
                 execution = pipeline_result["execution_result"]
                 insights = pipeline_result["insights"]
+                confidence = pipeline_result.get("confidence")
 
                 st.code(sql, language="sql")
 
@@ -134,7 +146,7 @@ if prompt:
 
                     st.dataframe(
                         execution["data"],
-                        use_container_width=True
+                        width='stretch'
                     )
 
                     if insights:
@@ -197,11 +209,10 @@ if prompt:
                                 f"**Feedback match:** {signals['feedback_match']}/20"
                             )
 
-                    # After the confidence badge expander block, add:
                     # -------------------------------------------------------
                     # Follow-up question chips
                     # -------------------------------------------------------
-                    from core.insight_generator import generate_followup_questions
+                    
 
                     if execution["success"] and execution["data"] is not None:
 
@@ -209,7 +220,8 @@ if prompt:
 
                         followups = generate_followup_questions(
                             prompt,
-                            df_preview
+                            df_preview,
+                            conversation_history=""
                         )
 
                         st.session_state.followups = followups or []
@@ -233,6 +245,16 @@ if prompt:
                         response = "\n".join(insights)
                     else:
                         response = f"Query executed successfully. Returned {execution['row_count']} rows."
+                    
+                    # ── Update conversation history for next turn ──────────
+                    
+                    st.session_state.ConversationHistory.append({
+                        "question": prompt,
+                        "sql":      sql,
+                        "result":   execution["data"].head(5).to_string(index=False)
+                                    if execution["data"] is not None else "(empty)",
+                    })
+                    response = "\n".join(insights) if insights else f"Query executed successfully."
                 else:
 
                     response = (
@@ -256,7 +278,7 @@ if prompt:
         "content": response,
         "sql": sql,
         "data": execution["data"] if execution["success"] else None,
-        "confidence": pipeline_result.get("confidence"),
-        "followups": st.session_state.followups
+        "confidence":"confidence",
+        "followups": followups
     }
 )
