@@ -23,6 +23,8 @@ def init_history_db():
             tables_used TEXT,
             confidence_score REAL,
             execution_ms REAL,
+            success INTEGER,
+            error_message TEXT,
             timestamp TEXT
         )
     """)
@@ -35,7 +37,9 @@ def log_query(
     sql: str,
     tables_used: list,
     confidence_score: float,
-    execution_ms: float
+    execution_ms: float,
+    success: int,
+    error_message:str
 ):
     """
     Saves one query run to the history database.
@@ -51,15 +55,26 @@ def log_query(
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""
         INSERT INTO query_history
-        (nl_query, sql, tables_used, confidence_score, execution_ms, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        nl_query,
-        sql,
-        json.dumps(tables_used),        # store list as JSON string
-        confidence_score,
-        execution_ms,
-        datetime.now().isoformat()
+        (
+            nl_query,
+            sql,
+            tables_used,
+            confidence_score,
+            execution_ms,
+            success,
+            error_message,
+            timestamp
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            nl_query,
+            sql,
+            json.dumps(tables_used),
+            confidence_score,
+            execution_ms,
+            int(success),
+            error_message,
+            datetime.now().isoformat()
     ))
     conn.commit()
     conn.close()
@@ -72,7 +87,7 @@ def get_recent_queries(limit: int = 50) -> list[dict]:
     """
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.execute("""
-        SELECT nl_query, sql, tables_used, confidence_score, execution_ms, timestamp
+        SELECT nl_query, sql, tables_used, confidence_score, execution_ms, success,error_message,timestamp
         FROM query_history
         ORDER BY id DESC
         LIMIT ?
@@ -89,7 +104,9 @@ def get_recent_queries(limit: int = 50) -> list[dict]:
             "tables_used": json.loads(row[2]),
             "confidence_score": row[3],
             "execution_ms": row[4],
-            "timestamp": row[5]
+            "success": bool(row[5]),
+            "error_message": row[6],
+            "timestamp": row[7]
         })
 
     return result
