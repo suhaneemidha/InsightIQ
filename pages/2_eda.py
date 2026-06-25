@@ -117,7 +117,7 @@ fig1.update_layout(
 
 st.plotly_chart(
     fig1,
-    use_container_width=True
+    width='stretch'
 )
 
 peak_month = monthly_orders.loc[
@@ -173,7 +173,7 @@ fig2.update_layout(
 
 st.plotly_chart(
     fig2,
-    use_container_width=True
+    width='stretch'
 )
 
 top_state = states.iloc[0]["customer_state"]
@@ -222,7 +222,7 @@ fig3.update_layout(
 
 st.plotly_chart(
     fig3,
-    use_container_width=True
+    width='stretch'
 )
 
 top_review = reviews.loc[
@@ -273,7 +273,7 @@ fig4.update_traces(
 
 st.plotly_chart(
     fig4,
-    use_container_width=True
+    width='stretch'
 )
 
 top_payment = payments.iloc[0]["payment_type"]

@@ -57,7 +57,7 @@ for idx, msg in enumerate(st.session_state.messages):
             if msg.get("data") is not None:
                 st.dataframe(
                     msg["data"],
-                    use_container_width=True
+                    width='stretch'
                 )
 
             if msg.get("confidence"):
@@ -134,7 +134,7 @@ if prompt:
 
                     st.dataframe(
                         execution["data"],
-                        use_container_width=True
+                        width='stretch'
                     )
 
                     if insights:
