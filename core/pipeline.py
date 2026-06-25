@@ -153,22 +153,22 @@ def run_pipeline(question: str, ConversationHistory: list = None) -> dict:
     print(f"[Pipeline] Signal breakdown: {confidence['signals']}")
 
     # ── Log ────────────────────────────────────────────────────────────
-    if execution_result["success"]:
-        save_cached_query(
+    
+    save_cached_query(
             question,
             sql,
             execution_result["data"],
             insights,
             confidence
         )
-        log_query(
+    log_query(
             nl_query=question,
             sql=sql,
             tables_used=sql_result.get("tables_used", []),
             confidence_score=confidence["score"],
             execution_ms=execution_ms,
         )
-        print("[Pipeline] Query logged to history.")
+    print("[Pipeline] Query logged to history.")
 
     return {
         "question":         question,
