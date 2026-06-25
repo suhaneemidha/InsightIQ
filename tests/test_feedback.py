@@ -1,12 +1,8 @@
 import chromadb
 
 client = chromadb.PersistentClient(path="vector_db")
+print(client.list_collections())
 
-try:
-    col = client.get_collection("feedback_index")
+collection = client.get_collection("feedback_index")
 
-    print("Collection exists")
-    print("Documents:", col.count())
-
-except Exception as e:
-    print("Error:", e)
+print("Collection count:", collection.count())

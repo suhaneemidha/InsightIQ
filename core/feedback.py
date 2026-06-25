@@ -64,7 +64,7 @@ class FeedbackVectorStore:
         self.embedder =  HuggingFaceEmbedding(model_name)
 
     def add(self, original_query: str, corrected_sql: str, metadata: Optional[Dict[str, Any]] = None):
-        embedding = self.embedder.get_query_embedding(original_query).tolist()
+        embedding = self.embedder.get_query_embedding(original_query)
 
         doc = f"Query: {original_query}\nCorrect SQL: {corrected_sql}"
 
@@ -76,7 +76,7 @@ class FeedbackVectorStore:
         )
 
     def search(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
-        embedding = self.embedder.get_query_embedding(query).tolist()
+        embedding = self.embedder.get_query_embedding(query)
 
         results = self.collection.query(
             query_embeddings=[embedding],

@@ -151,7 +151,7 @@ def format_few_shot(examples: list) -> str:
     return "\n\n".join(shots)
 
 
-def generate_sql(nl_query: str, schema_context: list[str]) -> dict:
+def generate_sql(nl_query: str, schema_context: list[str],conversation_context="") -> dict:
 
     schema_text = "\n\n".join(schema_context)
 
@@ -167,6 +167,8 @@ def generate_sql(nl_query: str, schema_context: list[str]) -> dict:
     
     few_shot_text = format_few_shot(top_examples)
 
+    conversation_block = f"\n### Conversation History:\n{conversation_context}\n" if conversation_context else ""
+    
     prompt = f"""
     {SYSTEM_PROMPT}
 
@@ -235,8 +237,8 @@ def validate_sql(sql: str):
             conn.close()
 
 
-def generate_sql_with_retry(nl_query, schema_context, max_retries=2):
-    result = generate_sql(nl_query, schema_context)
+def generate_sql_with_retry(nl_query, schema_context,conversation_context: str = "", max_retries=2):
+    result = generate_sql(nl_query, schema_context,conversation_context)
 
     for i in range(max_retries):
         sql = result.get("sql", "")
