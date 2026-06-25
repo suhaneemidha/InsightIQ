@@ -50,7 +50,7 @@ def build_vector_store():
             })
 
         for chunk in chunks:
-            embedding = embedder.get_query_embedding(chunk["text"]).tolist()
+            embedding = embedder.get_query_embedding(chunk["text"])
             collection.add(
                 ids=[chunk["id"]],
                 embeddings=[embedding],

@@ -15,24 +15,30 @@ def generate_insights(df: pd.DataFrame, question: str) -> list[str]:
     # Preview only first few rows
     data_preview = df.head(10).to_string(index=False)
 
-    prompt = f"""
-You are a data analyst.
+    prompt = """
+        Return ONLY valid JSON.
 
-Based on the query result below, generate 3-5 concise business insights.
+        Format:
+        [
+        {
+            "insight": "Some insight",
+            "evidence": ["123", "456"]
+        }
+        ]
 
-Rules:
-- Every number mentioned MUST exist in the data.
-- Do NOT invent values.
-- Do NOT round numbers.
-- Return ONLY bullet points.
-- Each bullet must start with "•"
-
-Question:
-{question}
-
-Data:
-{data_preview}
-"""
+        Rules:
+        - evidence must contain the exact values from the table that support the insight.
+        - Do not invent evidence.
+        - Return 3-5 insights.
+        - Generate BUSINESS insights only.
+        - Do NOT describe dataframe structure.
+        - Do NOT mention rows, columns, tables, dataframes, datasets, records.
+        - Do NOT explain what fields exist.
+        - Focus on trends, rankings, comparisons, distributions, totals and anomalies.
+        If the result contains only 1 row:
+        - Summarize the row.
+        - Do not generate comparisons.
+        """
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",  # or your preferred Groq model
@@ -49,13 +55,17 @@ Data:
         temperature=0
     )
 
-    raw_text = response.choices[0].message.content
+    raw_text = response.choices[0].message.content.strip()
 
-    insights = [
-        line.strip()
-        for line in raw_text.split("\n")
-        if line.strip().startswith("•")
-    ]
+    if raw_text.startswith("```"):
+        raw_text = (
+            raw_text
+            .replace("```json", "")
+            .replace("```", "")
+            .strip()
+        )
+
+    insights = json.loads(raw_text)
 
     # -------- Grounding Validation --------
 
@@ -66,32 +76,33 @@ Data:
     for col in df.columns:
         for val in df[col].dropna():
             all_values.add(str(val))
+
             try:
-                all_values.add(str(round(float(val), 2)))
+                all_values.add(str(float(val)))
+                all_values.add(f"{float(val):.2f}")
             except:
                 pass
 
-    for insight in insights:
-        numbers = re.findall(r"\d+\.?\d*", insight)
+    for item in insights:
 
-        valid = True
+        evidence = item.get("evidence", [])
 
-        for num in numbers:
-            if num not in all_values:
-                valid = False
-                break
+        grounded = all(
+            str(ev) in all_values
+            for ev in evidence
+        )
 
-        if valid:
-            valid_insights.append(insight)
+        if grounded:
+            valid_insights.append(
+                item["insight"]
+            )
         else:
-            print(f"[Grounding failed] {insight}")
-
-    return valid_insights if valid_insights else insights
-
-def generate_followup_questions(
-    question: str,
-    df_preview: str
-) -> list[str]:
+            print(
+                f"[Grounding failed] {item['insight']}"
+            )
+        return valid_insights
+    
+def generate_followup_questions(question: str,df_preview: str,conversation_history:str) -> list[str]:
     """
     Given the user's question and the data returned,
     generates 2 follow-up questions they might want to ask next.
