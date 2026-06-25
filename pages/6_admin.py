@@ -54,7 +54,7 @@ st.divider()
 init_history_db()
 
 # Load last 10 queries
-recent = get_recent_queries(limit=10)
+recent = get_recent_queries(limit=100)
 
 if not recent:
     st.info("No queries logged yet. Run some queries in the Chat page first.")

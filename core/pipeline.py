@@ -5,6 +5,12 @@ from core.retriever import (
     build_hybrid_retriever,
     retrieve_schema_with_scores_hyde,
 )
+from core.query_cache import (
+    init_cache_db,
+    get_cached_query,
+    save_cached_query
+)
+
 from core.sql_generator import generate_sql_with_retry
 from core.query_engine import execute_sql
 from core.insight_generator import generate_insights
@@ -12,9 +18,13 @@ from core.confidence_scorer import compute_confidence
 from core.query_history import init_history_db, log_query
 from core.feedback import FeedbackStore
 
+
 init_history_db()
+init_cache_db()
+
 feedback_store = FeedbackStore()
 retriever = build_hybrid_retriever()
+
 print("Hybrid retriever initialized.")
 
 
@@ -39,6 +49,31 @@ def run_pipeline(question: str, ConversationHistory: list = None) -> dict:
 
     print(f"\n[Pipeline] Question: {question}")
 
+    cached = get_cached_query(question)
+
+    if cached:
+
+        print("[Pipeline] Cache hit.")
+
+        return {
+            "question": question,
+            "schema_context": [],
+            "sql_result": {
+                "sql": cached["sql"],
+                "tables_used": [],
+                "reasoning": "Retrieved from cache",
+                "llm_confidence": 100
+            },
+            "execution_result": {
+                "success": True,
+                "data": cached["result"],
+                "row_count": len(cached["result"])
+            },
+            "insights": cached["insights"],
+            "confidence": cached["confidence"],
+            "retrieval_scores": [1.0]
+        }
+        
     ConversationContext = _BuildConversationContext(ConversationHistory)
     if ConversationContext:
         print(f"[Pipeline] Injecting {len(ConversationHistory)} prior turn(s) into prompt.")
@@ -119,6 +154,13 @@ def run_pipeline(question: str, ConversationHistory: list = None) -> dict:
 
     # ── Log ────────────────────────────────────────────────────────────
     if execution_result["success"]:
+        save_cached_query(
+            question,
+            sql,
+            execution_result["data"],
+            insights,
+            confidence
+        )
         log_query(
             nl_query=question,
             sql=sql,

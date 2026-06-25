@@ -67,6 +67,24 @@ order_delivered_customer_date,
 '%d-%m-%Y %H:%M'
 )
 )
+IMPORTANT:
+
+Even when only the DATE portion is required,
+ALWAYS parse timestamps using:
+
+STRPTIME(column, '%d-%m-%Y %H:%M')
+
+Then extract the date using:
+
+DATE(
+    STRPTIME(column, '%d-%m-%Y %H:%M')
+)
+
+Never use:
+
+STRPTIME(column, '%d-%m-%Y')
+
+because Olist timestamps always contain time values.
 
 Respond ONLY in valid JSON.
 
