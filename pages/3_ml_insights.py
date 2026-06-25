@@ -1,20 +1,26 @@
 import streamlit as st
 import duckdb
 import plotly.express as px
+import pandas as pd
+from prophet import Prophet
+import plotly.graph_objects as go
+
 
 st.title("🤖 AI Business Intelligence")
 
-st.caption("AI-powered business intelligence and decision support using the Olist dataset.")
-st.info("🧠 This dashboard simulates AI-driven business decision making using historical Olist e-commerce data.")
+st.caption("- AI-powered business intelligence and decision support using the Olist dataset.")
+st.caption("- Monetary values are displayed in Brazilian Real (BRL), the original currency of the Olist dataset.")
+st.info("This dashboard simulates AI-driven business decision making using historical Olist e-commerce data.")
+
 
 # -------------------------------
 # AI Dashboard Time
 # -------------------------------
 from datetime import datetime
-st.caption("Generated using historical Olist transaction patterns.")
 st.caption(
 f"🕒 Dashboard generated on {datetime.now().strftime('%d %b %Y, %I:%M %p')}"
 )
+
 
 # -------------------------------
 # Database connection
@@ -23,7 +29,6 @@ conn = duckdb.connect(
     "olist.db",
     read_only=True
 )
-
 
 revenue = conn.execute(
 """
@@ -35,6 +40,62 @@ SUM(price),
 FROM order_items
 """
 ).fetchone()[0]
+
+@st.cache_data
+def load_monthly_orders():
+    conn = duckdb.connect("olist.db", read_only=True)
+    df = conn.execute("""
+        SELECT
+            DATE_TRUNC(
+                'month',
+                STRPTIME(
+                    order_purchase_timestamp,
+                    '%d-%m-%Y %H:%M'
+                )
+            ) AS ds,
+            COUNT(*) AS y
+        FROM orders
+        GROUP BY ds
+        ORDER BY ds
+    """).df()
+    conn.close()
+
+    df["ds"] = pd.to_datetime(df["ds"])
+
+    # Remove incomplete final month (September 2018)
+    df = df.iloc[:-1].reset_index(drop=True)
+    return df
+
+
+# -------------------------------
+# helper functions
+# -------------------------------
+@st.cache_data
+def load_monthly_revenue():
+    conn = duckdb.connect("olist.db", read_only=True)
+    df = conn.execute("""
+        SELECT
+            DATE_TRUNC(
+                'month',
+                STRPTIME(
+                    o.order_purchase_timestamp,
+                    '%d-%m-%Y %H:%M'
+                )
+            ) AS ds,
+            SUM(oi.price) AS y
+        FROM orders o
+        JOIN order_items oi
+        ON o.order_id = oi.order_id
+        GROUP BY ds
+        ORDER BY ds
+    """).df()
+    conn.close()
+    df["ds"] = pd.to_datetime(df["ds"])
+
+    # Remove incomplete final month (September 2018)
+    df = df.iloc[:-1].reset_index(drop=True)
+    return df
+
 
 # -------------------------------
 # KPI cards
@@ -57,7 +118,6 @@ ROUND(
 100.0 *
 SUM(
 CASE
-
 WHEN STRPTIME(
 order_delivered_customer_date,
 '%d-%m-%Y %H:%M'
@@ -79,13 +139,14 @@ FROM orders
 WHERE order_delivered_customer_date IS NOT NULL
 """
 ).fetchone()[0]
+st.divider()
+
 
 # -------------------------------
 # Key Predictions
 # -------------------------------
 st.subheader("📊 Key Predictions")
 col1, col2, col3 = st.columns(3)
-
 delay_risk = round(
     100-on_time, 3
 )
@@ -96,14 +157,14 @@ col1.metric(
 )
 col2.metric(
     "Avg Customer Rating",
-    f"{avg_rating} ⭐"
+    f"{avg_rating}"
 )
 col3.metric(
-"Total Revenue",
-f"₹{revenue*15:,.0f}"
+    "Total Revenue",
+    f"R$ {revenue:,.0f}"
 )
-
 st.divider()
+
 
 # -------------------------------
 # Customer Segmentation
@@ -123,29 +184,25 @@ LIMIT 5
 ).df()
 
 cols = st.columns(5)
-
 for i, row in segments.iterrows():
     state = row["customer_state"]
     total = row["total_customers"]
 
     if total > 10000:
         label = "High Value"
-
     elif total > 5000:
         label = "Growth"
-
     else:
         label = "Emerging"
     
     cols[i].info(
         f"""
         {state}
-
         {label}
-
-        {total:,} customers 👥 
+        {total:,} customers
         """
     )
+st.divider()
 
 
 # -------------------------------
@@ -195,9 +252,7 @@ ORDER BY delay DESC
 LIMIT 5
 """
 ).df()
-st.write(risk)
 risk = risk.dropna()
-
 
 chart_type = st.radio(
     "Select visualization",
@@ -219,7 +274,6 @@ if chart_type == "Pie Chart":
             "#4DABF7"
         ]
     )
-
 else:
     fig = px.bar(
         risk,
@@ -241,10 +295,9 @@ fig.update_layout(
 st.plotly_chart(
     fig,
     use_container_width=True,
-    config={
-        "displayModeBar": False
-    }
+    config={"displayModeBar": False}
 )
+st.divider()
 
 
 # -------------------------------
@@ -299,7 +352,6 @@ f"Reward customers in {top_review_state}"
 ]
 
 col1, col2 = st.columns(2)
-
 col1.info(
     opportunities[0]
 )
@@ -312,12 +364,13 @@ col2.info(
 col2.info(
     opportunities[3]
 )
+st.divider()
 
 
 # -------------------------------
 # Seller Leaderboard
 # -------------------------------
-st.subheader("🏆 Seller Intelligence")
+st.subheader("🏆 Seller Leaderboard")
 
 sellers = conn.execute(
 """
@@ -335,12 +388,11 @@ cols = st.columns(5)
 position = ["a.","b.","c.","d.","e."]
 for i,row in sellers.iterrows():
     cols[i].metric(
-        f"{position[i]} Seller {i+1}",
-        f"₹{row['revenue']*15:,.0f}"
-    )
-    cols[i].caption(
-        f"{row['revenue']:,.0f} BRL"
-    ) 
+    f"Seller {i+1}",
+    f"R$ {row['revenue']:,.0f}"
+)
+st.divider()
+
 
 # -------------------------------
 # Risk Meter
@@ -351,136 +403,220 @@ if on_time > 90:
     st.success(
         "Low Risk Business"
     )
-
 elif on_time > 80:
     st.warning(
         "Moderate Risk Business"
     )
-
 else:
     st.error(
         "High Risk Business"
     )
-
-
-# -------------------------------
-# Prediction Simulator
-# -------------------------------
-st.subheader("🎯 AI Prediction Simulator")
-rating_factor = avg_rating/5
-delivery_factor = on_time/100
-
-marketing = st.slider(
-    "Marketing Budget Increase (%)",
-    0,
-    50,
-    10
-)
-
-predicted_revenue = round(
-revenue *
-(
-1 +
-marketing/100 * 0.15
-),
-0
-)
-
-st.metric(
-"Projected Revenue",
-f"₹{predicted_revenue*15:,.0f}"
-)
-
-if marketing < 15:
-    st.info(
-        "📌 Conservative strategy"
-    )
-
-elif marketing < 30:
-    st.warning(
-        "📌 Balanced growth strategy"
-    )
-
-else:
-    st.success(
-        "📌 Aggressive expansion strategy"
-    )
+st.divider()
 
 
 # -------------------------------
 # Business Health Score
 # -------------------------------
-st.subheader("❤️ Business Health Score")
+score = 0
+# Customer rating (40 points)
+score += (avg_rating / 5) * 40
+# On-time delivery (40 points)
+score += (on_time / 100) * 40
+# Delivery risk (20 points)
+score += max(0, 20 - delay_risk)
+score = round(score)
 
-score = round(
-(
-avg_rating*20 + on_time
-) 
-/2
+
+# -------------------------------
+# ML Forecasting
+# -------------------------------
+st.subheader("📈 Machine Learning Forecast")
+
+metric = st.selectbox(
+    "Forecast Metric",
+    [
+        "Monthly Revenue",
+        "Monthly Orders"
+    ]
+)
+forecast_months = st.slider(
+    "Forecast Months",
+    1,
+    6,
+    3
 )
 
-st.progress(
-    score
-)
+if st.button("Run Forecast"):
+    with st.spinner("Training ML model..."):
 
-st.metric(
-    "Overall Health",
-    f"{score}/100"
-)
+        if metric == "Monthly Revenue":
+            df = load_monthly_revenue()
+            ylabel = "Revenue (BRL)"
+        else:
+            df = load_monthly_orders()
+            ylabel = "Orders"
+        model = Prophet(
+            yearly_seasonality=True,
+            weekly_seasonality=False,
+            daily_seasonality=False,
+            seasonality_mode="multiplicative"
+        )
+        model.fit(df)
+        future = model.make_future_dataframe(
+            periods=forecast_months,
+            freq="MS"
+        )
+        forecast = model.predict(future)
+        future_df = forecast[
+            forecast["ds"] > df["ds"].max()
+        ]
 
-if score >= 85:
-    st.success(
-        "Excellent Business Health"
+    st.success("Forecast generated successfully.")
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=df["ds"],
+            y=df["y"],
+            mode="lines+markers",
+            name="Historical",
+            line=dict(
+                color="#4DABF7",
+                width=3
+            )
+        )
     )
 
-elif score >= 70:
-    st.warning(
-        "Good Business Health"
+    fig.add_trace(
+        go.Scatter(
+            x=future_df["ds"],
+            y=future_df["yhat"],
+            mode="lines+markers",
+            name="Forecast",
+            line=dict(
+                color="#FF6B6B",
+                width=3,
+                dash="dash"
+            )
+        )
     )
 
-else:
-    st.error(
-        "Needs Improvement"
+    fig.add_trace(
+        go.Scatter(
+            x=pd.concat(
+                [
+                    future_df["ds"],
+                    future_df["ds"][::-1]
+                ]
+            ),
+            y=pd.concat(
+                [
+                    future_df["yhat_upper"],
+                    future_df["yhat_lower"][::-1]
+                ]
+            ),
+            fill="toself",
+            fillcolor="rgba(255,99,71,0.2)",
+            line=dict(color="rgba(255,255,255,0)"),
+            showlegend=False
+        )
     )
 
-if score >= 85:
-    st.info(
-        "📌 Excellent performance. Focus on scaling operations."
+    fig.update_layout(
+        title=f"{metric} Forecast",
+        xaxis_title="Month",
+        yaxis_title=ylabel,
+        hovermode="x unified"
     )
 
-elif score >= 70:
-    st.info(
-        "📌 Stable business with room for optimization."
+    st.plotly_chart(
+    fig,
+    use_container_width=True,
+    config={"displayModeBar": False}
     )
 
-else:
-    st.info(
-        "📌 Immediate attention required in logistics and customer experience."
+    st.subheader("Forecast Results")
+    table = future_df[
+        [
+            "ds",
+            "yhat",
+            "yhat_lower",
+            "yhat_upper"
+        ]
+    ].copy()
+    table.columns = [
+        "Month",
+        "Forecast",
+        "Lower",
+        "Upper"
+    ]
+    table["Month"] = table["Month"].dt.strftime("%b %Y")
+
+    st.dataframe(
+        table,
+        use_container_width=True,
+        hide_index=True
     )
+
+    st.subheader("🧠 AI Model Prediction Interpretation")
+
+    # Compare the average of the last 3 historical months
+    # with the average of the forecast period
+    historical_avg = df["y"].tail(3).mean()
+    forecast_avg = future_df["yhat"].mean()
+
+    st.metric(
+        "Average Forecast",
+        f"{forecast_avg:,.0f}"
+    )
+
+    if forecast_avg > historical_avg * 1.10:
+        st.success(
+            "The forecast indicates an upward business trend over the coming months. Consider increasing inventory and marketing investment."
+        )
+    elif forecast_avg < historical_avg * 0.90:
+        st.warning(
+            "The forecast indicates a downward trend. Consider reviewing pricing, logistics and promotional strategies."
+        )
+    else:
+        st.info(
+            "The forecast indicates relatively stable business performance over the forecast period."
+        )  
 
 
 # -------------------------------
 # AI Executive Summary
 # -------------------------------
-st.subheader("🧠 AI Executive Summary")
-
 if score >= 85:
     status = "Excellent"
-
 elif score >= 70:
     status = "Good"
-
 else:
     status = "Needs Improvement"
+# -------------------------------
+if delay_risk > 15:
+    action = "Improve delivery logistics"
+elif avg_rating < 4:
+    action = "Improve customer satisfaction"
+else:
+    action = "Expand marketing to high-value markets"
+# -------------------------------
+forecast_value = "Not generated"
+if "future_df" in locals():
+    forecast_value = f"{future_df['yhat'].mean():,.0f}"
+# -------------------------------
 
-summary = f"""
-1. Overall Status: {status}
-2. Average Rating: {avg_rating}
-3. Revenue Growth: {revenue}%
-4. Biggest Challenge: Delivery delays in {delay_state}
-5. Suggested Action: Prioritize logistics optimization
-"""
+with st.container(border=True):
+    st.markdown(f"""
+### Executive Summary
 
-st.info(summary)
+- **Overall Business Status:** {status}
+- **Average Rating:** {avg_rating}
+- **Total Revenue:** R$ {revenue:,.0f}
+- **Delivery Delay Risk:** {delay_risk:.1f}%
+- **{forecast_months}-month ML Forecast:** {forecast_value}
+- **Largest Customer State Market:** {top_state}
+- **Biggest Challenge:** Delivery delays in {delay_state}
+- **Recommended Action:** {action}
+""")
 
 conn.close()
