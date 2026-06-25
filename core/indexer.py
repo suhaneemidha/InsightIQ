@@ -1,5 +1,5 @@
 import chromadb
-from sentence_transformers import SentenceTransformer
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 import json, os
 
 METADATA_PATH = "metadata/"
@@ -7,7 +7,7 @@ VECTOR_DB_PATH = "vector_db/"
 
 def build_vector_store():
     print("Loading embedding model (this takes ~30s first time)...")
-    embedder = SentenceTransformer("all-MiniLM-L6-v2")
+    embedder = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
     # This model runs fully locally — no API key, no internet needed after first download
 
     client = chromadb.PersistentClient(path=VECTOR_DB_PATH)
@@ -50,7 +50,7 @@ def build_vector_store():
             })
 
         for chunk in chunks:
-            embedding = embedder.encode(chunk["text"]).tolist()
+            embedding = embedder.get_query_embedding(chunk["text"]).tolist()
             collection.add(
                 ids=[chunk["id"]],
                 embeddings=[embedding],

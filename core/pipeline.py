@@ -116,10 +116,9 @@ def run_pipeline(question: str) -> dict:
             "feedback_index"
         )
 
-        query_embedding = embedder.encode(
+        query_embedding = embedder.get_query_embedding(
             question
-        ).tolist()
-
+        )
         feedback_results = feedback_col.query(
             query_embeddings=[query_embedding],
             n_results=2
