@@ -15,15 +15,20 @@ def generate_insights(df: pd.DataFrame, question: str) -> list[str]:
     # Preview only first few rows
     data_preview = df.head(10).to_string(index=False)
 
-    prompt = """
+    prompt = f"""
+        Question:
+        {question}
+
+        Query Result:
+        {data_preview}
         Return ONLY valid JSON.
 
         Format:
         [
-        {
+        {{
             "insight": "Some insight",
             "evidence": ["123", "456"]
-        }
+        }}
         ]
 
         Rules:
@@ -35,9 +40,13 @@ def generate_insights(df: pd.DataFrame, question: str) -> list[str]:
         - Do NOT mention rows, columns, tables, dataframes, datasets, records.
         - Do NOT explain what fields exist.
         - Focus on trends, rankings, comparisons, distributions, totals and anomalies.
+        - Each insight must be unique.
+        - Do not restate the same finding in different words.
+        - If only one row is returned, generate at most 2 insights.
         If the result contains only 1 row:
         - Summarize the row.
         - Do not generate comparisons.
+        
         """
 
     response = client.chat.completions.create(
@@ -64,9 +73,13 @@ def generate_insights(df: pd.DataFrame, question: str) -> list[str]:
             .replace("```", "")
             .strip()
         )
-
-    insights = json.loads(raw_text)
-
+    try:
+        insights = json.loads(raw_text)
+    except Exception as e:
+        print(f"[Insight Parse Error] {e}")
+        print("Raw response:", repr(raw_text))
+        return []
+    
     # -------- Grounding Validation --------
 
     valid_insights = []
@@ -100,7 +113,7 @@ def generate_insights(df: pd.DataFrame, question: str) -> list[str]:
             print(
                 f"[Grounding failed] {item['insight']}"
             )
-        return valid_insights
+    return valid_insights
     
 def generate_followup_questions(question: str,df_preview: str,conversation_history:str) -> list[str]:
     """

@@ -252,7 +252,7 @@ if prompt:
                     if insights:
                         response = "\n".join(insights)
                     else:
-                        response = f"Query executed successfully. Returned {execution['row_count']} rows."
+                        response = "\n".join(f"- {i}" for i in insights) if insights else "Query executed successfully."
                     
                     # ── Update conversation history for next turn ──────────
                     
@@ -278,7 +278,7 @@ if prompt:
 
                 st.error(response)
 
-        st.markdown(response)
+        
 
     st.session_state.messages.append(
     {
