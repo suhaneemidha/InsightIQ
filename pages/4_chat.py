@@ -134,7 +134,15 @@ if prompt:
             try:
 
                 pipeline_result = run_pipeline(prompt, ConversationHistory=st.session_state.ConversationHistory,)
-
+                
+                # Show cached badge if result came from semantic cache
+                if pipeline_result.get("from_cache"):
+                    st.info(
+                        f"⚡ Cached result — similar to: "
+                        f"*\"{pipeline_result.get('cache_hit_query', '')}\"*  "
+                        f"(answered instantly)"
+                    )
+                    
                 sql = pipeline_result["sql_result"]["sql"]
                 execution = pipeline_result["execution_result"]
                 insights = pipeline_result["insights"]
