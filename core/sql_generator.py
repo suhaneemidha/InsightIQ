@@ -22,8 +22,12 @@ You are an expert SQL analyst.
 You will be given:
 1. A database schema (table names, columns, descriptions)
 2. A natural language question
+3. (Optionally) Admin-corrected SQL examples — follow these STRICTLY and exactly
+4. (Optionally) Recent conversation turns with their SQL and results
 
 Your job is to write a DuckDB-compatible SQL query that answers the question.
+If the question refers to "this", "that", "the same", or any prior result,
+use the conversation history to resolve the exact value (e.g. a specific customer_id).
 
 IMPORTANT RULES:
 - Use ONLY tables and columns present in the schema context.
@@ -150,7 +154,9 @@ def load_few_shot_examples(path="data/golden_queries.json"):
     return examples
 
 def get_top_k_examples(query: str, examples: list, k: int = 3) -> list:
+    
     query_emb = embedder.get_query_embedding(query)
+    
     if not examples:
         return []
     example_embs = [embedder.get_query_embedding(e["nl_query"]) for e in examples]
@@ -169,7 +175,7 @@ def format_few_shot(examples: list) -> str:
     return "\n\n".join(shots)
 
 
-def generate_sql(nl_query: str, schema_context: list[str],conversation_context="") -> dict:
+def generate_sql(nl_query: str, schema_context: list[str],conversation_context="",feedback_chunks: list[str] = None,) -> dict:
 
     schema_text = "\n\n".join(schema_context)
 
@@ -187,9 +193,24 @@ def generate_sql(nl_query: str, schema_context: list[str],conversation_context="
 
     conversation_block = f"\n### Conversation History:\n{conversation_context}\n" if conversation_context else ""
     
+    
+    # Feedback chunks get their own clearly labeled section
+    # so the LLM knows to follow them strictly, not treat them as schema
+    
+    feedback_block = ""
+    if feedback_chunks:
+        feedback_block = (
+            "\n### Admin-Corrected SQL Examples "
+            "(these are verified correct — follow the SQL patterns strictly):\n"
+            + "\n---\n".join(feedback_chunks)
+            + "\n"
+        )
+        
     prompt = f"""
     {SYSTEM_PROMPT}
-
+    {conversation_block}
+    {feedback_block}
+    
     ### Similar Examples:
     {few_shot_text}
     
@@ -255,8 +276,8 @@ def validate_sql(sql: str):
             conn.close()
 
 
-def generate_sql_with_retry(nl_query, schema_context,conversation_context: str = "", max_retries=2):
-    result = generate_sql(nl_query, schema_context,conversation_context)
+def generate_sql_with_retry(nl_query, schema_context,conversation_context: str = "",feedback_chunks: list[str] = None, max_retries=2):
+    result = generate_sql(nl_query, schema_context,conversation_context,feedback_chunks)
 
     for i in range(max_retries):
         sql = result.get("sql", "")

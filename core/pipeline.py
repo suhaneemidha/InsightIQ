@@ -86,6 +86,10 @@ def run_pipeline(question: str, ConversationHistory: list = None) -> dict:
         print(f"[Pipeline] Injecting {len(ConversationHistory)} prior turn(s) into prompt.")
 
     # ── HyDE Retrieval ─────────────────────────────────────────────────
+    hyde_chunks = []
+    retrieval_scores = [0.5]
+    schema_context = []
+    
     try:
         hyde_chunks, hyde_scores = retrieve_schema_with_scores_hyde(
             question, retriever.dense_retriever
@@ -98,23 +102,21 @@ def run_pipeline(question: str, ConversationHistory: list = None) -> dict:
         
         print(f"[Pipeline] HyDE failed ({HydeError}), using empty HyDE results.")
         
-        hyde_chunks = []
-        retrieval_scores = [0.5]
         
-
     # ── Hybrid Retrieval ───────────────────────────────────────────────
     
     hybrid_chunks = retriever.retrieve(question, top_k=6)
-    full_context = list(dict.fromkeys(hyde_chunks + hybrid_chunks))
-
+    schema_context = list(dict.fromkeys(hyde_chunks + hybrid_chunks))
+    
     print(f"[Pipeline] HyDE chunks: {len(hyde_chunks)}")
     print(f"[Pipeline] Hybrid chunks: {len(hybrid_chunks)}")
-    print(f"[Pipeline] Combined chunks: {len(full_context)}")
+    print(f"[Pipeline] Combined chunks: {len(schema_context)}")
     print(f"[Pipeline] Top similarity score: {retrieval_scores[0] if retrieval_scores else 'N/A'}")
 
 
     # ── Feedback Retrieval ─────────────────────────────────────────────
     
+    feedback_chunks = []
     feedback_hit = False
     
     try:
@@ -123,25 +125,30 @@ def run_pipeline(question: str, ConversationHistory: list = None) -> dict:
         
         distances = feedback_results.get("distances", [[1.0]])[0]
         
-        feedback_hit = bool(distances and distances[0] < 0.35)
-        full_context = list(dict.fromkeys(full_context + feedback_chunks))
+        feedback_hit = bool(distances and distances[0] < 0.88)
+        #full_context = list(dict.fromkeys(full_context + feedback_chunks))
         
         print(f"[Pipeline] Added {len(feedback_chunks)} feedback chunk(s). Hit: {feedback_hit}")
     
     except Exception as FeedbackError:
         print(f"[Pipeline] No feedback found: {FeedbackError}")
 
-    full_context = full_context[:8]
+    #full_context = full_context[:8]
     
-    print(f"[Pipeline] Final context size: {len(full_context)}")
+    #print(f"[Pipeline] Final context size: {len(full_context)}")
+    
+    schema_context = schema_context[:8]
+    
+    print(f"[Pipeline] Final schema context size: {len(schema_context)}")
     print(f"[Pipeline] Feedback hit: {feedback_hit}")
 
     # ── Generate SQL ───────────────────────────────────────────────────
     
     sql_start = time.time()
     sql_result = generate_sql_with_retry(
-        question, full_context, conversation_context=ConversationContext
+        question, schema_context, conversation_context=ConversationContext,feedback_chunks=feedback_chunks,  
     )
+    
     sql_ms = (time.time() - sql_start) * 1000
 
     sql = sql_result.get("sql")
@@ -211,7 +218,7 @@ def run_pipeline(question: str, ConversationHistory: list = None) -> dict:
 
     return {
         "question":         question,
-        "schema_context":   full_context,
+        "schema_context":   schema_context,
         "sql_result":       sql_result,
         "execution_result": execution_result,
         "insights":         insights,
