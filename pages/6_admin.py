@@ -104,12 +104,16 @@ section_spacer(5)
 # -------------------------------------------------------
 
 for i, row in enumerate(recent):
-    with st.expander(f"Query {i+1}", expanded=False):
+    StatusIcon = "❌" if not row["success"] else "✅"
+    with st.expander(f"{StatusIcon} Query {i+1}: {row['nl_query'][:80]}...", expanded=False):
 
         # Show original question
         st.markdown(f"**Question**\n\n{row['nl_query']}")
         st.markdown(f"**Confidence:** {row['confidence_score']}/100")
         st.markdown(f"**Timestamp:** {row['timestamp']}")
+        
+        if not row["success"]:
+            st.error(f"❌ Failed: {row['error_message']}")
 
         # Show generated SQL (read only, for reference)
         st.markdown("**Generated SQL:**")

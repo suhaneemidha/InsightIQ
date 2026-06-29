@@ -274,7 +274,7 @@ def check_feedback_hit(query: str) -> bool:
 
         # If distances list is not empty and top result is close enough
         distances = results.get("distances", [[]])[0]
-        if distances and distances[0] < 0.35:  
+        if distances and distances[0] < 0.88:  
             return True
         return False
 

@@ -1,5 +1,6 @@
 import streamlit as st
 from core.pipeline import run_pipeline
+from components.chartgenerator import render_chart
 from core.insight_generator import generate_followup_questions
 
 
@@ -64,6 +65,10 @@ for idx, msg in enumerate(st.session_state.messages):
                     msg["data"],
                     width='stretch'
                 )
+                render_chart(
+                    msg["data"],
+                    key_suffix=f"history_{idx}"
+                    )
 
             if msg.get("confidence")and isinstance(msg["confidence"], dict):
 
@@ -134,7 +139,15 @@ if prompt:
             try:
 
                 pipeline_result = run_pipeline(prompt, ConversationHistory=st.session_state.ConversationHistory,)
-
+                
+                # Show cached badge if result came from semantic cache
+                if pipeline_result.get("from_cache"):
+                    st.info(
+                        f"⚡ Cached result — similar to: "
+                        f"*\"{pipeline_result.get('cache_hit_query', '')}\"*  "
+                        f"(answered instantly)"
+                    )
+                    
                 sql = pipeline_result["sql_result"]["sql"]
                 execution = pipeline_result["execution_result"]
                 insights = pipeline_result["insights"]
@@ -143,12 +156,35 @@ if prompt:
                 st.code(sql, language="sql")
 
                 if execution["success"]:
+                    display_df = execution["data"]
 
-                    st.dataframe(
-                        execution["data"],
-                        width='stretch'
+                if len(display_df) > 1000:
+                    st.info(
+                        f"Showing first 1000 of {len(display_df)} rows"
                     )
 
+                    display_df = display_df.head(1000)
+                    st.dataframe(
+                        display_df,
+                        width='stretch'
+                    )
+                    st.caption(
+                        f"Rows Returned: {execution['row_count']}"
+)                   
+                    csv = execution["data"].to_csv(index=False)
+                    st.download_button(
+                        label="⬇ Download Full Results",
+                        data=csv,
+                        file_name="query_results.csv",
+                        mime="text/csv"
+)
+                    st.subheader("📊 Visualization")
+
+                    render_chart(
+                        execution["data"],
+                        key_suffix=f"current_{len(st.session_state.messages)}"
+                    )
+                    
                     if insights:
 
                         st.subheader("💡 Insights")
@@ -244,7 +280,7 @@ if prompt:
                     if insights:
                         response = "\n".join(insights)
                     else:
-                        response = f"Query executed successfully. Returned {execution['row_count']} rows."
+                        response = "\n".join(f"- {i}" for i in insights) if insights else "Query executed successfully."
                     
                     # ── Update conversation history for next turn ──────────
                     
@@ -270,7 +306,7 @@ if prompt:
 
                 st.error(response)
 
-        st.markdown(response)
+        
 
     st.session_state.messages.append(
     {
@@ -278,7 +314,7 @@ if prompt:
         "content": response,
         "sql": sql,
         "data": execution["data"] if execution["success"] else None,
-        "confidence":"confidence",
+        "confidence":confidence,
         "followups": followups
     }
 )
