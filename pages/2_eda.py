@@ -1,9 +1,21 @@
 import streamlit as st
 import duckdb
 import plotly.express as px
+from ui.layout import apply_global_styles
+from ui.sidebar import render_sidebar_brand
+from ui.components import (
+    section_header,
+    metric_row,
+    footer,
+)
+apply_global_styles()
 
-st.title("🔍 Exploratory Data Analysis")
-st.caption(
+render_sidebar_brand(
+    "InsightIQ",
+    "AI-powered analytics"
+)
+section_header(
+    "🔍 Exploratory Data Analysis",
     "Interactive business insights from the Olist e-commerce dataset"
 )
 
@@ -36,7 +48,7 @@ products = conn.execute(
     "SELECT COUNT(*) FROM products"
 ).fetchone()[0]
 
-st.subheader("📊 Dataset Overview")
+section_header("📊 Dataset Overview")
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric(
@@ -65,7 +77,7 @@ st.divider()
 # --------------------------------
 # Orders per month
 # --------------------------------
-st.subheader("📈 Orders Trend")
+section_header("Orders Trend")
 monthly_orders = conn.execute(
 """
 SELECT
@@ -93,7 +105,7 @@ chart = st.radio(
     "Scatter Plot"
     ],
     horizontal=True,
-    key="orders"
+    key="orders",
 )
 
 if chart == "Line Chart":
@@ -146,14 +158,9 @@ else:
     )
 
 st.plotly_chart(
-
     fig,
     use_container_width=True,
     config={"displayModeBar": False}
-
-    fig1,
-    width='stretch'
-
 )
 
 peak_month = monthly_orders.loc[
@@ -162,7 +169,7 @@ peak_month = monthly_orders.loc[
 ]
 peak_orders = monthly_orders["orders"].max()
 
-st.info(
+st.success(
     f"Peak order volume occurred in {peak_month.strftime('%b %Y')} with {peak_orders:,} orders."
 )
 st.divider()
@@ -171,7 +178,7 @@ st.divider()
 # --------------------------------
 # Top customer states
 # --------------------------------
-st.subheader("🌎 Customer Distribution")
+section_header("Customer Distribution")
 states = conn.execute(
 """
 SELECT
@@ -233,13 +240,11 @@ st.plotly_chart(
     fig,
     use_container_width=True,
     config={"displayModeBar": False}
-    fig2,
-    width='stretch'
 )
 
 top_state = states.iloc[0]["customer_state"]
 
-st.info(
+st.success(
     f"{top_state} has the highest number of customers."
 )
 st.divider()
@@ -248,7 +253,7 @@ st.divider()
 # --------------------------------
 # Review score distribution
 # --------------------------------
-st.subheader("⭐ Customer Satisfaction")
+section_header("Customer Distribution")
 reviews = conn.execute(
 """
 SELECT
@@ -314,8 +319,6 @@ st.plotly_chart(
     fig,
     use_container_width=True,
     config={"displayModeBar": False}
-    fig3,
-    width='stretch'
 )
 
 top_review = reviews.loc[
@@ -323,7 +326,7 @@ top_review = reviews.loc[
     "review_score"
 ]
 
-st.info(
+st.success(
     f"Most customers gave a {top_review}-star rating."
 )
 st.divider()
@@ -332,8 +335,7 @@ st.divider()
 # --------------------------------
 # Payment Methods
 # --------------------------------
-st.subheader("💳 Payment Methods")
-
+section_header("Payment Methods")
 payments = conn.execute(
 """
 SELECT
@@ -401,13 +403,11 @@ st.plotly_chart(
     fig,
     use_container_width=True,
     config={"displayModeBar": False}
-    fig4,
-    width='stretch'
 )
 
 top_payment = payments.iloc[0]["payment_type"]
 
-st.info(
+st.success(
     f"{top_payment.title()} is the preferred payment method."
 )
 st.divider()
@@ -416,8 +416,7 @@ st.divider()
 # --------------------------------
 # Top Product Categories
 # --------------------------------
-st.subheader("🛍 Top Product Categories")
-
+section_header("Top Product Categories")
 categories = conn.execute("""
 SELECT
 t.product_category_name_english AS category,
@@ -490,7 +489,7 @@ st.plotly_chart(
     config={"displayModeBar": False}
 )
 
-st.info(
+st.success(
     f"{categories.iloc[0]['category']} is the best-selling category."
 )
 st.divider()
@@ -499,8 +498,7 @@ st.divider()
 # --------------------------------
 # Product Price Distribution
 # --------------------------------
-st.subheader("📦 Product Price Distribution")
-
+section_header("Product Price Distribution")
 prices = conn.execute("""
 SELECT
     price
@@ -548,7 +546,7 @@ st.plotly_chart(
     config={"displayModeBar": False}
 )
 
-st.info(
+st.success(
     f"Product prices range from R$ {prices['price'].min():.2f} to R$ {prices['price'].max():.2f}."
 )
 st.divider()
@@ -557,8 +555,7 @@ st.divider()
 # --------------------------------
 # Freight Cost Analysis
 # --------------------------------
-st.subheader("🚚 Freight Cost Analysis")
-
+section_header("Freight Cost Analysis")
 freight = conn.execute("""
 SELECT
 price,
@@ -607,8 +604,7 @@ st.divider()
 # --------------------------------
 # Payment Value Distribution
 # --------------------------------
-st.subheader("💰 Payment Value Distribution")
-
+section_header("Payment Value Distribution")
 payment_values = conn.execute("""
 SELECT
     payment_value
@@ -656,7 +652,7 @@ st.plotly_chart(
     config={"displayModeBar": False}
 )
 
-st.info(
+st.success(
     f"Payment values range from R$ {payment_values['payment_value'].min():.2f} to R$ {payment_values['payment_value'].max():.2f}."
 )
 st.divider()
@@ -665,8 +661,7 @@ st.divider()
 # --------------------------------
 # Orders by Hour
 # --------------------------------
-st.subheader("🕒 Orders by Hour")
-
+section_header("Orders by Hour")
 hours = conn.execute("""
 SELECT
 EXTRACT(
@@ -752,18 +747,21 @@ peak_hour = hours.loc[
     "hour"
 ]
 
-st.info(
+st.success(
     f"Peak shopping activity occurs around {int(peak_hour):02d}:00 hours."
 )
 
 #----------------------------------------------
 st.divider()
-st.subheader("📥 Download Data")
+section_header("Download Data")
+
 csv = monthly_orders.to_csv(index=False)
+
 st.download_button(
-    "Download EDA Data",
-    csv,
-    "eda_data.csv",
-    "text/csv"
+    label="Download CSV",
+    data=csv,
+    file_name="eda_data.csv",
+    mime="text/csv",
 )
 conn.close()
+footer("InsightIQ · Exploratory Data Analysis")

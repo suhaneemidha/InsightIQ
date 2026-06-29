@@ -1,0 +1,210 @@
+/* ===========================================================
+   SHARED COMPONENTS — cards, badges, buttons, tabs, tables
+   =========================================================== */
+
+/* ---- Glass Card ---- */
+.glass-card {
+  background: rgba(46, 69, 64, 0.35);
+  border: 1px solid rgba(181, 185, 240, 0.12);
+  border-radius: var(--radius-md);
+
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  padding: 1.6rem;
+
+  transition: all .3s ease;
+
+  box-shadow:
+      0 8px 24px rgba(0,0,0,.25);
+}
+
+.glass-card:hover {
+
+  background: rgba(64,129,117,.22);
+
+  border-color: rgba(181,185,240,.25);
+
+  transform: translateY(-4px);
+
+  box-shadow:
+      0 15px 35px rgba(0,0,0,.35);
+
+}
+
+/* ---- Badge (glassmorphism pill) ---- */
+.glass-badge {
+
+  background: rgba(64,129,117,.16);
+
+  border:1px solid rgba(181,185,240,.18);
+
+  color:var(--text-primary);
+
+  font-family:'Cabin',sans-serif;
+
+  letter-spacing:.04em;
+
+}
+.glass-badge .dot{
+
+    background:#B5B9F0;
+
+    box-shadow:0 0 8px rgba(181,185,240,.4);
+
+}
+
+/* ---- Gradient Heading ---- */
+.gradient-heading {
+  background: var(--accent-gradient);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradientShift 6s ease infinite;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+/* ---- CTA Button ---- */
+.cta-button {
+  display: inline-block;
+  background: var(--accent-gradient);
+  color: #fff !important;
+  font-weight: 600;
+  padding: 0.85rem 2rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-family:'Cabin',sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  box-shadow: 0 4px 18px rgba(64,129,117,.35);
+}
+.cta-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  background:#4D9385;
+  box-shadow: 0 8px 28px rgba(181,185,240,.35);
+}
+
+/* ---- Streamlit native button override ---- */
+.stButton > button {
+  background: var(--accent-gradient) !important;
+  color: #fff !important;
+  border: none !important;
+  font-family:'Cabin',sans-serif;
+  border-radius: var(--radius-sm) !important;
+  font-weight: 600 !important;
+  padding: 0.6rem 1.4rem !important;
+  transition: var(--transition-fast) !important;
+}
+.stButton > button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow) !important;
+}
+
+/* ---- Metric Card ---- */
+.metric-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+}
+.metric-card .metric-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.metric-card .metric-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+.metric-label{
+
+    font-family:'Cabin',sans-serif;
+
+}
+
+.metric-value{
+
+    font-family:'Oswald',sans-serif;
+
+    font-size:2rem;
+
+}
+
+/* ---- Tabs ---- */
+.stTabs [data-baseweb="tab-list"] {
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+.stTabs [data-baseweb="tab"] {
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  padding: 10px 16px;
+  font-family:'Cabin',sans-serif;
+  font-weight:500;
+}
+.stTabs [aria-selected="true"] {
+  color: var(--text-primary) !important;
+  border-bottom: 2px solid var(--accent) !important;
+}
+
+/* ---- Expander ---- */
+.streamlit-expanderHeader {
+  background: var(--card-bg) !important;
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* ---- Tables / DataFrames ---- */
+[data-testid="stDataFrame"] {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+/* ---- Inputs ---- */
+.stTextInput input, .stSelectbox div, .stTextArea textarea {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--text-primary) !important;
+  backdrop-filter:blur(12px);
+}
+/* ---- Flow Diagram ---- */
+.flow-diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin: 1.5rem 0;
+}
+.flow-node {
+  width: 280px;
+  text-align: center;
+  padding: 0.9rem 1.2rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.flow-connector {
+  width: 2px;
+  height: 28px;
+  background: linear-gradient(180deg, #8B5CF6, #22D3EE);
+  margin: 4px 0;
+}
+
+/* ---- Footer ---- */
+.app-footer {
+  text-align: center;
+  padding: 2rem 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border-color);
+  margin-top: 3rem;
+}

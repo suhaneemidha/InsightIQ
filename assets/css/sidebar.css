@@ -1,0 +1,82 @@
+/* ===========================================================
+   SIDEBAR STYLES
+   =========================================================== */
+
+[data-testid="stSidebar"] {
+  background: linear-gradient(180deg, #2E4540, #0B0909);
+  border-right: 1px solid var(--border-color);
+}
+
+[data-testid="stSidebar"] .sidebar-brand {
+  font-family:'Oswald',sans-serif;
+  font-weight:600;
+  font-size: 1.55rem;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  color: transparent;
+  padding: 1rem 0 0.6rem;
+}
+/* ---------- Caption ---------- */
+
+[data-testid="stSidebar"] p{
+
+    font-family:'Cabin',sans-serif;
+
+}
+
+[data-testid="stSidebar"] .nav-item {
+  display:flex;
+  align-items:center;
+  padding:12px 16px;
+  border-radius: var(--radius-sm);
+  font-family:'Cabin',sans-serif;
+  font-size:.95rem;
+  font-weight:500;
+  color:var(--text-muted);
+  margin-bottom: 6px;
+  transition: var(--transition-fast);
+  cursor: pointer;
+}
+[data-testid="stSidebar"] .nav-item:hover {
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+[data-testid="stSidebar"] .nav-item.active {
+  background: rgba(64,129,117,.22));
+  color: var(--text-primary);
+  border-left: 4px solid var(--accent);
+  font-weight:600;
+}
+/* ---------- Divider ---------- */
+
+[data-testid="stSidebar"] hr{
+
+    border-color:rgba(181,185,240,.08);
+
+}
+
+
+/* ---------- Expander ---------- */
+
+[data-testid="stSidebar"] .streamlit-expanderHeader{
+
+    background:rgba(46,69,64,.18)!important;
+
+    border:1px solid rgba(181,185,240,.08)!important;
+
+}
+
+
+/* ---------- Metrics ---------- */
+
+[data-testid="stSidebar"] [data-testid="stMetric"]{
+
+    background:rgba(46,69,64,.18);
+
+    border:1px solid rgba(181,185,240,.08);
+
+    border-radius:14px;
+
+    padding:.7rem;
+
+}

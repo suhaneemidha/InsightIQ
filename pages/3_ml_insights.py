@@ -4,13 +4,32 @@ import plotly.express as px
 import pandas as pd
 from prophet import Prophet
 import plotly.graph_objects as go
+from ui.layout import apply_global_styles, section_spacer
+from ui.sidebar import render_sidebar_brand
+from ui.components import (
+    section_header,
+    sidebar_stat,
+    footer,
+)
 
+apply_global_styles()
 
-st.title("🤖 AI Business Intelligence")
+render_sidebar_brand(
+    "InsightIQ",
+    "AI-Powered Business Intelligence"
+)
 
-st.caption("- AI-powered business intelligence and decision support using the Olist dataset.")
-st.caption("- Monetary values are displayed in Brazilian Real (BRL), the original currency of the Olist dataset.")
-st.info("This dashboard simulates AI-driven business decision making using historical Olist e-commerce data.")
+section_header(
+    "ML Insights",
+    "AI-powered forecasting, business intelligence and decision support."
+)
+st.sidebar.markdown("---")
+
+sidebar_stat("🛒", "Orders", "~99,441")
+sidebar_stat("👥", "Customers", "~99,441")
+sidebar_stat("🏪", "Sellers", "~3,095")
+
+st.sidebar.caption("📅 Sep 2016 – Oct 2018")
 
 
 # -------------------------------
@@ -145,7 +164,7 @@ st.divider()
 # -------------------------------
 # Key Predictions
 # -------------------------------
-st.subheader("📊 Key Predictions")
+section_header("Key Predictions")
 col1, col2, col3 = st.columns(3)
 delay_risk = round(
     100-on_time, 3
@@ -169,7 +188,7 @@ st.divider()
 # -------------------------------
 # Customer Segmentation
 # -------------------------------
-st.subheader("👥 Customer Segmentation")
+section_header("Customer Segmentation")
 
 segments = conn.execute(
 """
@@ -198,7 +217,7 @@ for i, row in segments.iterrows():
     cols[i].info(
         f"""
         {state}
-        {label}
+        {label}\n
         {total:,} customers
         """
     )
@@ -208,7 +227,7 @@ st.divider()
 # -------------------------------
 # Delivery Risk Predictor
 # -------------------------------
-st.subheader("🚚 Delivery Risk Analysis")
+section_header("Delivery Risk Analysis")
 
 risk = conn.execute(
 """
@@ -303,7 +322,7 @@ st.divider()
 # -------------------------------
 # AI Business Opportunities
 # -------------------------------
-st.subheader("💡 AI Opportunities")
+section_header("AI Business Opportunities")
 
 top_state = segments.iloc[0]["customer_state"]
 delay_state = risk.iloc[0]["customer_state"]
@@ -370,7 +389,7 @@ st.divider()
 # -------------------------------
 # Seller Leaderboard
 # -------------------------------
-st.subheader("🏆 Seller Leaderboard")
+section_header("Seller Leaderboard")
 
 sellers = conn.execute(
 """
@@ -397,7 +416,7 @@ st.divider()
 # -------------------------------
 # Risk Meter
 # -------------------------------
-st.subheader("⚠️ AI Risk Meter")
+section_header("Business Risk")
 
 if on_time > 90:
     st.success(
@@ -430,7 +449,7 @@ score = round(score)
 # -------------------------------
 # ML Forecasting
 # -------------------------------
-st.subheader("📈 Machine Learning Forecast")
+section_header("Machine Learning Forecast")
 
 metric = st.selectbox(
     "Forecast Metric",
@@ -534,7 +553,7 @@ if st.button("Run Forecast"):
     config={"displayModeBar": False}
     )
 
-    st.subheader("Forecast Results")
+    section_header("Forecast Results")
     table = future_df[
         [
             "ds",
@@ -557,7 +576,7 @@ if st.button("Run Forecast"):
         hide_index=True
     )
 
-    st.subheader("🧠 AI Model Prediction Interpretation")
+    section_header("AI Prediction Interpretation")
 
     # Compare the average of the last 3 historical months
     # with the average of the forecast period
@@ -620,3 +639,5 @@ with st.container(border=True):
 """)
 
 conn.close()
+
+footer("InsightIQ • ML Insights")
