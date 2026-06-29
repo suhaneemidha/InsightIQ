@@ -90,6 +90,26 @@ STRPTIME(column, '%d-%m-%Y')
 
 because Olist timestamps always contain time values.
 
+
+When the user's question contains a year, date, month, state,
+product category, seller, customer, or any filtering value,
+DO NOT copy filter values from few-shot examples.
+
+Always extract filtering values directly from the current question.
+
+The current question overrides all examples.
+
+If the question asks:
+- per month
+- month wise
+- monthly
+
+ALWAYS use:
+
+DATE_TRUNC('month', STRPTIME(...))
+
+Never group by DATE(...)
+
 Respond ONLY in valid JSON.
 
 Format:
@@ -216,7 +236,8 @@ def generate_sql(nl_query: str, schema_context: list[str],conversation_context="
     
     ### Schema Context:
     {schema_text}
-   
+    {conversation_block}
+    
     ### Question:
     {nl_query}
     """
