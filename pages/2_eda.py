@@ -148,7 +148,7 @@ else:
 st.plotly_chart(
 
     fig,
-    use_container_width=True,
+    width='stretch',
     config={"displayModeBar": False}
 
 )
@@ -228,7 +228,7 @@ else:
 
 st.plotly_chart(
     fig,
-    use_container_width=True,
+    width='stretch',
     config={"displayModeBar": False}
 )
 
@@ -307,7 +307,7 @@ else:
 
 st.plotly_chart(
     fig,
-    use_container_width=True,
+    width='stretch',
     config={"displayModeBar": False}
     
 )
@@ -393,7 +393,7 @@ else:
 
 st.plotly_chart(
     fig,
-    use_container_width=True,
+    width='stretch',
     config={"displayModeBar": False}
     
 )
@@ -479,7 +479,7 @@ else:
 
 st.plotly_chart(
     fig,
-    use_container_width=True,
+    width='stretch',
     config={"displayModeBar": False}
 )
 
@@ -537,7 +537,7 @@ else:
 
 st.plotly_chart(
     fig,
-    use_container_width=True,
+    width='stretch',
     config={"displayModeBar": False}
 )
 
@@ -591,7 +591,7 @@ else:
 
 st.plotly_chart(
     fig,
-    use_container_width=True,
+    width='stretch',
     config={"displayModeBar": False}
 )
 st.divider()
@@ -645,7 +645,7 @@ else:
 
 st.plotly_chart(
     fig,
-    use_container_width=True,
+    width='stretch',
     config={"displayModeBar": False}
 )
 
@@ -736,7 +736,7 @@ else:
 
 st.plotly_chart(
     fig,
-    use_container_width=True,
+    width='stretch',
     config={"displayModeBar": False}
 )
 

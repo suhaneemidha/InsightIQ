@@ -2,7 +2,7 @@ import duckdb
 import pandas as pd
 from core.data_store import get_connection
 
-ROW_CAP = 30
+ROW_CAP = 5000
 
 def execute_sql(sql: str) -> dict:
     """
@@ -13,16 +13,20 @@ def execute_sql(sql: str) -> dict:
         conn = get_connection(read_only=True)
         df = conn.execute(sql).fetchdf()
         conn.close()
-
-        truncated = len(df) > ROW_CAP
-        if truncated:
+        
+        full_row_count = len(df)
+        truncated = False
+        
+        if ROW_CAP is not None and len(df) > ROW_CAP:
+            truncated = True
             df = df.head(ROW_CAP)
 
         return {
             "success": True,
             "data": df,
-            "row_count": len(df),
-            "truncated": truncated
+            "row_count": full_row_count,
+            "truncated": truncated,
+            "error": None
         }
 
     except Exception as e:

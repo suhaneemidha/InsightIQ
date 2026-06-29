@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 from datetime import datetime
+import re
 
 DB_PATH     = "semantic_cache.db"
 EMBED_MODEL = "all-MiniLM-L6-v2"
@@ -29,6 +30,8 @@ class _JsonEncoder(json.JSONEncoder):
             return obj.tolist()
         return super().default(obj)
     
+def extract_years(text):
+    return re.findall(r"\b(20\d{2})\b", text)
     
 def init_cache_db():
     """
@@ -140,8 +143,10 @@ def cache_lookup(nl_query: str) -> dict | None:
         f"[SemanticCache] Best match='{best_entry['nl_query']}' "
         f"(sim={best_sim:.3f})"
     )
-
-    if best_sim >= SIM_THRESHOLD:
+    query_years = extract_years(nl_query)
+    cached_years = extract_years(best_entry["nl_query"])
+    
+    if (best_sim >= SIM_THRESHOLD and query_years == cached_years):
 
         print(
             f"[SemanticCache] HIT (sim={best_sim:.3f}) "

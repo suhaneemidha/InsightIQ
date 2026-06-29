@@ -157,16 +157,16 @@ if prompt:
 
                 if execution["success"]:
                     display_df = execution["data"]
-
-                if len(display_df) > 1000:
-                    st.info(
-                        f"Showing first 1000 of {len(display_df)} rows"
-                    )
-
-                    display_df = display_df.head(1000)
+                    
+                        
+                    if len(display_df) > 1000:
+                        st.info(
+                            f"Showing first 1000 of {len(display_df)} rows"
+                        )
                     st.dataframe(
                         display_df,
-                        width='stretch'
+                        width='stretch',
+                        height=700
                     )
                     st.caption(
                         f"Rows Returned: {execution['row_count']}"
