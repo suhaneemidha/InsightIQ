@@ -1,0 +1,281 @@
+/* ===========================================================
+   BASE RESET & GLOBAL TYPOGRAPHY
+   Premium Minimal Design System
+   =========================================================== */
+
+/* ---------- Google Fonts ---------- */
+
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Cabin:wght@400;500;600&family=Droid+Sans:wght@400;700&display=swap');
+
+
+/* ---------- Global ---------- */
+
+html,
+body,
+[class*="css"]{
+
+    font-family:'Droid Sans',sans-serif;
+    color:var(--text-primary);
+
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+
+}
+
+
+/* ---------- Background ---------- */
+
+.stApp{
+
+    background:var(--bg-primary);
+
+}
+
+
+/* ---------- Hide Streamlit UI ---------- */
+
+#MainMenu{
+
+    visibility:hidden;
+
+}
+
+footer{
+
+    visibility:hidden;
+
+}
+
+header{
+
+    background:transparent !important;
+
+}
+
+
+/* ---------- Layout ---------- */
+
+.block-container{
+
+    max-width:1280px;
+
+    padding-top:2.5rem;
+
+    padding-bottom:4rem;
+
+    padding-left:2rem;
+
+    padding-right:2rem;
+
+}
+
+
+/* ---------- Headings ---------- */
+
+h1{
+
+    font-family:'Oswald',sans-serif;
+
+    font-size:3.5rem;
+
+    font-weight:600;
+
+    letter-spacing:.05em;
+
+    line-height:1.1;
+
+    color:var(--text-primary);
+
+    margin-bottom:.8rem;
+
+}
+
+h2{
+
+    font-family:'Oswald',sans-serif;
+
+    font-size:2.2rem;
+
+    font-weight:500;
+
+    letter-spacing:.04em;
+
+    color:var(--text-primary);
+
+    margin-bottom:.7rem;
+
+}
+
+h3{
+
+    font-family:'Oswald',sans-serif;
+
+    font-size:1.55rem;
+
+    font-weight:500;
+
+    color:var(--text-primary);
+
+}
+
+h4,
+h5,
+h6{
+
+    font-family:'Oswald',sans-serif;
+
+    font-weight:500;
+
+    color:var(--text-primary);
+
+}
+
+
+/* ---------- Subheadings ---------- */
+
+.subheading{
+
+    font-family:'Cabin',sans-serif;
+
+    font-size:1.1rem;
+
+    font-weight:500;
+
+    color:var(--text-muted);
+
+    line-height:1.7;
+
+}
+
+
+/* ---------- Paragraph ---------- */
+
+p{
+
+    font-family:'Droid Sans',sans-serif;
+
+    font-size:1rem;
+
+    line-height:1.8;
+
+    color:var(--text-muted);
+
+}
+
+
+/* ---------- Labels ---------- */
+
+label{
+
+    font-family:'Cabin',sans-serif;
+
+    font-size:.95rem;
+
+    font-weight:500;
+
+    color:var(--text-primary);
+
+}
+
+
+/* ---------- Lists ---------- */
+
+li{
+
+    font-family:'Droid Sans',sans-serif;
+
+    line-height:1.8;
+
+    color:var(--text-muted);
+
+}
+
+
+/* ---------- Links ---------- */
+
+a{
+
+    color:var(--accent);
+
+    text-decoration:none;
+
+    transition:.2s ease;
+
+}
+
+a:hover{
+
+    color:var(--accent-secondary);
+
+}
+
+
+/* ---------- Selection ---------- */
+
+::selection{
+
+    background:rgba(64,129,117,.25);
+
+}
+
+
+/* ---------- Scrollbar ---------- */
+
+::-webkit-scrollbar{
+
+    width:8px;
+
+}
+
+::-webkit-scrollbar-track{
+
+    background:#121212;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#3E5F58;
+
+    border-radius:50px;
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+    background:#408175;
+
+}
+
+
+/* ---------- Images ---------- */
+
+img{
+
+    max-width:100%;
+
+    display:block;
+
+}
+
+
+/* ---------- Inputs ---------- */
+
+input,
+textarea,
+select{
+
+    font-family:'Droid Sans',sans-serif;
+
+}
+
+
+/* ---------- Small Text ---------- */
+
+small{
+
+    font-family:'Cabin',sans-serif;
+
+    color:var(--text-muted);
+
+}

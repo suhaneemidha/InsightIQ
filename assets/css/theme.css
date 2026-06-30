@@ -1,0 +1,49 @@
+/* ===========================================================
+   THEME VARIABLES — single source of truth for design tokens
+   =========================================================== */
+:root {
+
+  /* ==========================
+     BRAND COLORS
+     ========================== */
+
+  --bg-primary: #0B0909;
+  --bg-secondary: #2E4540;
+
+  --card-bg: rgba(46, 69, 64, 0.55);
+  --card-bg-hover: rgba(64, 129, 117, 0.75);
+
+  --accent: #408175;
+  --accent-secondary: #B5B9F0;
+
+  --accent-gradient:
+      linear-gradient(135deg,
+      #408175 0%,
+      #B5B9F0 100%);
+
+  --text-primary: #F5F5F5;
+  --text-muted: #C9CDD8;
+
+  --border-color: rgba(181,185,240,0.18);
+
+  /* Radius */
+
+  --radius-sm:12px;
+  --radius-md:18px;
+  --radius-lg:26px;
+
+  /* Shadows */
+
+  --shadow-soft:
+      0 10px 30px rgba(47, 47, 47, 0.45);
+  --shadow-hover:
+      0 18px 45px rgba(43, 43, 43, 0.38);
+  --shadow-glow:
+      0 0 30px rgba(181,185,240,.22);
+
+  --blur-glass: blur(18px);
+
+  --transition-fast:.22s ease;
+  --transition-smooth:.45s cubic-bezier(.22,1,.36,1);
+
+}
