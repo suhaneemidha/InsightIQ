@@ -4,7 +4,7 @@
 
 [data-testid="stSidebar"] {
   background: linear-gradient(180deg, #2E4540, #0B0909);
-  border-right: 1px solid var(--border-color);
+  border-right: 2px solid var(--border-color);
 }
 
 [data-testid="stSidebar"] .sidebar-brand {
@@ -19,9 +19,7 @@
 /* ---------- Caption ---------- */
 
 [data-testid="stSidebar"] p{
-
     font-family:'Cabin',sans-serif;
-
 }
 
 [data-testid="stSidebar"] .nav-item {
@@ -42,7 +40,7 @@
   color: var(--text-primary);
 }
 [data-testid="stSidebar"] .nav-item.active {
-  background: rgba(64,129,117,.22));
+  background: rgba(64,129,117,.22);
   color: var(--text-primary);
   border-left: 4px solid var(--accent);
   font-weight:600;
@@ -59,11 +57,8 @@
 /* ---------- Expander ---------- */
 
 [data-testid="stSidebar"] .streamlit-expanderHeader{
-
     background:rgba(46,69,64,.18)!important;
-
     border:1px solid rgba(181,185,240,.08)!important;
-
 }
 
 

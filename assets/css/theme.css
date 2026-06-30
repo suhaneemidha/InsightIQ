@@ -35,9 +35,9 @@
   /* Shadows */
 
   --shadow-soft:
-      0 10px 30px rgba(0,0,0,.45);
+      0 10px 30px rgba(47, 47, 47, 0.45);
   --shadow-hover:
-      0 18px 45px rgba(0,0,0,.38);
+      0 18px 45px rgba(43, 43, 43, 0.38);
   --shadow-glow:
       0 0 30px rgba(181,185,240,.22);
 

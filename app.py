@@ -26,7 +26,6 @@ from ui.sidebar import render_sidebar_brand
 
 st.set_page_config(
     page_title="InsightIQ",
-    page_icon="📊",
     layout="wide",
 )
 
@@ -107,11 +106,11 @@ st.sidebar.markdown("---")
 
 if stats:
 
-    sidebar_stat("🛒", "Orders", f"{stats['orders']:,}")
-    sidebar_stat("👥", "Customers", f"{stats['customers']:,}")
-    sidebar_stat("🏪", "Sellers", f"{stats['sellers']:,}")
-    sidebar_stat("📦", "Products", f"{stats['products']:,}")
-    sidebar_stat("⭐", "Reviews", f"{stats['reviews']:,}")
+    sidebar_stat("1.", "Orders", f"{stats['orders']:,}")
+    sidebar_stat("2.", "Customers", f"{stats['customers']:,}")
+    sidebar_stat("3.", "Sellers", f"{stats['sellers']:,}")
+    sidebar_stat("4.", "Products", f"{stats['products']:,}")
+    sidebar_stat("5.", "Reviews", f"{stats['reviews']:,}")
 
     if stats["date_min"] and stats["date_max"]:
         st.sidebar.caption(
@@ -248,4 +247,4 @@ render_flow_diagram([
 # FOOTER
 # ==========================================================
 
-footer("InsightIQ • AI-Powered Business Intelligence • Built with Streamlit")
+footer("InsightIQ • AI-Powered Business Intelligence")
