@@ -83,7 +83,7 @@ def run_pipeline(question: str, ConversationHistory: list = None) -> dict:
     ConversationContext = _BuildConversationContext(ConversationHistory)
     
     if ConversationContext:
-        print(f"[Pipeline] Injecting {len(ConversationHistory)} prior turn(s) into prompt.")
+        print(f"[Pipeline] Injecting {min(len(ConversationHistory), 3)} prior turn(s) into prompt.")
 
     # ── HyDE Retrieval ─────────────────────────────────────────────────
     hyde_chunks = []
