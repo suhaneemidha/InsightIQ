@@ -2,23 +2,39 @@ import streamlit as st
 from core.pipeline import run_pipeline
 from components.chartgenerator import render_chart
 from core.insight_generator import generate_followup_questions
-
+from ui.layout import apply_global_styles, section_spacer
+from ui.sidebar import render_sidebar_brand
+from ui.components import (
+    section_header,
+    sidebar_stat,
+    footer,
+)
 
 st.set_page_config(
     page_title="InsightIQ Chat",
     page_icon="💬",
     layout="wide"
 )
+apply_global_styles()
 
-st.title("💬 InsightIQ Chat")
-st.markdown("Ask anything about the Olist e-commerce dataset.")
+render_sidebar_brand(
+    "InsightIQ",
+    "AI-powered analytics"
+)
+
+section_header(
+    "💬 InsightIQ Chat",
+    "Ask natural language questions about the Olist e-commerce dataset."
+)
+
 
 # Sidebar stats
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 📊 Dataset Stats")
-st.sidebar.metric("Total Orders", "~99,441")
-st.sidebar.metric("Customers", "~99,441")
-st.sidebar.metric("Sellers", "~3,095")
+st.sidebar.markdown("**Dataset Stats**")
+sidebar_stat("1.", "Orders", "~99,441")
+sidebar_stat("2.", "Customers", "~99,441")
+sidebar_stat("3.", "Sellers", "~3,095")
+
 st.sidebar.caption("📅 Sep 2016 – Oct 2018")
 
 # Initialize chat history
@@ -128,7 +144,7 @@ if prompt:
     # Assistant response
     with st.chat_message("assistant"):
 
-        with st.spinner("Thinking..."):
+        with st.spinner("Analyzing your question..."):
             sql        = None
             execution  = {"success": False, "data": None, "error": "Pipeline did not run."}
             insights   = []
@@ -178,13 +194,14 @@ if prompt:
                         file_name="query_results.csv",
                         mime="text/csv"
 )
-                    st.subheader("📊 Visualization")
+                    section_header("Visualization")
 
                     display_df = display_df.head(1000)
                     st.dataframe(
                         display_df,
                         width='stretch'
                     )
+                    
                     st.caption(
                         f"Rows Returned: {execution['row_count']}"
 )                   
@@ -195,7 +212,7 @@ if prompt:
                         file_name="query_results.csv",
                         mime="text/csv"
 )
-                    st.subheader("📊 Visualization")
+                    section_header("Visualization")
 
                     render_chart(
                         execution["data"],
@@ -204,7 +221,7 @@ if prompt:
                     
                     if insights:
 
-                        st.subheader("💡 Insights")
+                        section_header("Insights")
 
                         for insight in insights:
                             st.markdown(f"- {insight}")
@@ -232,7 +249,7 @@ if prompt:
                             <div style="
                                 display:inline-block;
                                 background-color:{color};
-                                color:white;
+                                color:#0B0909;
                                 padding:6px 16px;
                                 border-radius:20px;
                                 font-weight:bold;
@@ -244,7 +261,7 @@ if prompt:
                             unsafe_allow_html=True
                         )
 
-                        with st.expander("See confidence breakdown"):
+                        with st.expander("See confidence breakdown", expanded=False):
 
                             st.write(
                                 f"**Retrieval quality:** {signals['retrieval']}/30"
@@ -282,7 +299,7 @@ if prompt:
                         if st.session_state.followups:
 
                             st.markdown("---")
-                            st.markdown("### 🔁 Related Questions")
+                            section_header("Suggested Follow-up Questions")
 
                             for i, q in enumerate(st.session_state.followups):
 
