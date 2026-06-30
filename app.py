@@ -1,11 +1,41 @@
-import streamlit as st
 import os
+import streamlit as st
+
+from ui.layout import (
+    apply_global_styles,
+    page_container,
+    section_spacer,
+)
+
+from ui.components import (
+    section_header,
+    metric_row,
+    sidebar_stat,
+    render_flow_diagram,
+    footer,
+    feature_card,
+)
+
+from ui.hero import render_hero_section
+from ui.sidebar import render_sidebar_brand
+
+
+# ==========================================================
+# PAGE CONFIG
+# ==========================================================
 
 st.set_page_config(
     page_title="InsightIQ",
-    page_icon="📊",
-    layout="wide"
+    layout="wide",
 )
+
+# Load complete design system
+apply_global_styles()
+
+
+# ==========================================================
+# DATA LAYER (UNCHANGED)
+# ==========================================================
 
 @st.cache_data
 def load_stats():
@@ -18,6 +48,7 @@ def load_stats():
         conn = duckdb.connect(DB_PATH, read_only=True)
 
         stats = {
+
             "orders": conn.execute(
                 "SELECT COUNT(*) FROM orders"
             ).fetchone()[0],
@@ -61,92 +92,159 @@ def load_stats():
 
 stats = load_stats()
 
-# ---------------- SIDEBAR ---------------- #
 
-st.sidebar.title("📊 InsightIQ")
-st.sidebar.markdown("AI-powered analytics — Olist E-Commerce")
+# ==========================================================
+# SIDEBAR
+# ==========================================================
+
+render_sidebar_brand(
+    "InsightIQ",
+    "AI-Powered Business Intelligence"
+)
+
 st.sidebar.markdown("---")
 
 if stats:
 
-    st.sidebar.metric("🛒 Orders", f"{stats['orders']:,}")
-    st.sidebar.metric("👥 Customers", f"{stats['customers']:,}")
-    st.sidebar.metric("🏪 Sellers", f"{stats['sellers']:,}")
-    st.sidebar.metric("📦 Products", f"{stats['products']:,}")
-    st.sidebar.metric("⭐ Reviews", f"{stats['reviews']:,}")
+    sidebar_stat("1.", "Orders", f"{stats['orders']:,}")
+    sidebar_stat("2.", "Customers", f"{stats['customers']:,}")
+    sidebar_stat("3.", "Sellers", f"{stats['sellers']:,}")
+    sidebar_stat("4.", "Products", f"{stats['products']:,}")
+    sidebar_stat("5.", "Reviews", f"{stats['reviews']:,}")
 
     if stats["date_min"] and stats["date_max"]:
         st.sidebar.caption(
             f"📅 {stats['date_min']} → {stats['date_max']}"
         )
 
-    with st.sidebar.expander("🗄️ Dataset Schema"):
-        st.markdown("""
-        **Available Tables**
+    with st.sidebar.expander("Dataset Schema"):
 
-        - customers
-        - orders
-        - order_items
-        - products
-        - sellers
-        - payments
-        - reviews
-        - geolocation
-        - category_translation
-        """)
+        st.markdown(
+            """
+**Available Tables**
+
+- customers
+- orders
+- order_items
+- products
+- sellers
+- payments
+- reviews
+- geolocation
+- category_translation
+"""
+        )
 
 else:
-    st.sidebar.warning("Database could not be loaded.")
 
-# ---------------- MAIN PAGE ---------------- #
+    st.sidebar.warning(
+        "Database could not be loaded."
+    )
 
-st.title("📊 InsightIQ")
 
-st.markdown("""
-### Welcome 👋
+# ==========================================================
+# HOME PAGE
+# ==========================================================
 
-InsightIQ lets you explore e-commerce data using natural language.
+render_hero_section(
+    badge_text="Business Intelligence Platform",
+    title="InsightIQ",
+    subtitle=(
+        "Explore the Olist e-commerce dataset using natural language. "
+        "Chat with your data, generate visualizations, and uncover "
+        "business insights in seconds."
+    ),
+    cta_text="Explore Dashboard",
+    height=480,
+)
 
-#### Features
+section_spacer(40)
 
-- Chat with your data
-- Upload and manage datasets
-- Automated Exploratory Data Analysis (EDA)
-- Machine Learning Insights
-- Knowledge Graph Visualization
+# ==========================================================
+# DATASET SNAPSHOT
+# ==========================================================
 
-Use the sidebar to navigate between pages.
-""")
+if stats:
 
-st.info("⬅️ Open the Chat page from the sidebar to start asking questions.")
+    section_header(
+        "Dataset Snapshot",
+        "A quick overview of the Olist e-commerce database."
+    )
 
-col1, col2, col3 = st.columns(3)
+    metric_row([
+        {
+            "label": "Orders",
+            "value": f"{stats['orders']:,}"
+        },
+        {
+            "label": "Customers",
+            "value": f"{stats['customers']:,}"
+        },
+        {
+            "label": "Products",
+            "value": f"{stats['products']:,}"
+        },
+        {
+            "label": "Reviews",
+            "value": f"{stats['reviews']:,}"
+        },
+    ])
 
-with col1:
-    st.metric("LLM", "Groq")
+    section_spacer(25)
 
-with col2:
-    st.metric("Database", "DuckDB")
 
-with col3:
-    st.metric("Dataset", "Olist")
+# ==========================================================
+# TECHNOLOGY STACK
+# ==========================================================
 
-st.markdown("---")
+section_header(
+    "Technology Stack",
+    "Built with a modern analytics and AI ecosystem."
+)
 
-st.subheader("Project Architecture")
+metric_row([
+    {
+        "label": "LLM",
+        "value": "Groq",
+    },
+    {
+        "label": "Database",
+        "value": "DuckDB",
+    },
+    {
+        "label": "Framework",
+        "value": "Streamlit",
+    },
+    {
+        "label": "Dataset",
+        "value": "Olist",
+    },
+])
 
-st.code("""
-User Question
-      ↓
-  Streamlit
-      ↓
-    Groq
-      ↓
-Natural Language → SQL
-      ↓
-    DuckDB
-      ↓
-  Olist Data
-      ↓
-Results & Charts
-""")
+section_spacer(35)
+
+# ==========================================================
+# PROJECT ARCHITECTURE
+# ==========================================================
+
+section_header(
+    "Project Architecture",
+    "How InsightIQ transforms natural language into actionable insights."
+)
+
+render_flow_diagram([
+    "User Query",
+    "Streamlit Interface",
+    "Groq LLM",
+    "Natural Language → SQL",
+    "DuckDB Engine",
+    "Olist Database",
+    "Results & Visualizations",
+])
+
+
+# ==========================================================
+# FOOTER
+# ==========================================================
+
+footer("InsightIQ • AI-Powered Business Intelligence")

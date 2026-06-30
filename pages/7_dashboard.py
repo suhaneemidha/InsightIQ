@@ -6,17 +6,47 @@ import streamlit as st
 import duckdb
 import plotly.express as px
 import sys, os
-
+from datetime import datetime
+from ui.layout import apply_global_styles, section_spacer
+from ui.sidebar import render_sidebar_brand
+from ui.hero import render_page_banner
+from ui.components import (
+    section_header,
+    metric_row,
+    sidebar_stat,
+    footer,
+)
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-st.set_page_config(page_title="KPI Dashboard", layout="wide")
-st.title("📊 KPI Dashboard")
-st.caption("Pre-computed business metrics from the Olist dataset. Refreshes on page load.")
+st.set_page_config(
+    page_title="InsightIQ Dashboard",
+    page_icon="📊",
+    layout="wide"
+)
 
-from datetime import datetime
+apply_global_styles()
+render_sidebar_brand(
+    "InsightIQ",
+    "AI-Powered Analytics"
+)
+render_page_banner(
+    icon="📊",
+    title="KPI Dashboard",
+    subtitle="Pre-computed business metrics from the Olist dataset. Refreshes on page load",
+    height=180,
+)
 st.caption(
     f"Updated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}"
 )
+
+# Sidebar stats
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Dataset Stats**")
+sidebar_stat("1.", "Orders", "~99,441")
+sidebar_stat("2.", "Customers", "~99,441")
+sidebar_stat("3.", "Sellers", "~3,095")
+st.sidebar.caption("📅 September 2016 – October 2018")
+
 # -------------------------------------------------------
 # Load all KPIs from DuckDB
 # -------------------------------------------------------
@@ -156,51 +186,47 @@ with st.spinner("Loading KPIs from database..."):
     kpis = load_kpis()
 
 st.subheader("Key Metrics")
+metric_row([
+    {
+        "label": "Revenue",
+        "value": f"R$ {kpis['total_revenue']:,.0f}"
+    },
+    {
+        "label": "Orders",
+        "value": f"{kpis['total_orders']:,}"
+    },
+    {
+        "label": "Review Score",
+        "value": f"{kpis['avg_review']:.2f}"
+    },
+])
 
-col1, col2, col3 = st.columns(3)
+section_spacer(12)
 
-col1.metric(
-    label="Total Revenue",
-    value=f"R$ {kpis['total_revenue']:,.2f}"
-)
-
-col2.metric(
-    label="Total Orders",
-    value=f"{kpis['total_orders']:,}"
-)
-
-col3.metric(
-    label="Avg Review Score",
-    value=f"{kpis['avg_review']} / 5.0"
-)
-
-col4, col5, col6 = st.columns(3)
-
-col4.metric(
-    label="Top Seller Revenue",
-    value=f"R$ {kpis['top_seller_revenue']:,.2f}",
-    help=f"Seller ID: {kpis['top_seller_id']}"
-)
-
-col5.metric(
-    label="Most Delayed State",
-    value=kpis["most_delayed_state"],
-    delta=f"{kpis['most_delayed_days']} avg days to deliver",
-    delta_color="inverse"
-)
-
-col6.metric(
-    label="Latest MoM Growth",
-    value=f"{kpis['mom_growth_pct']}%",
-    delta="vs previous month"
-)
-
+metric_row([
+    {
+        "label": "Top Seller",
+        "value": f"R$ {kpis['top_seller_revenue']:,.0f}"
+    },
+    {
+        "label": "Delayed State",
+        "value": kpis["most_delayed_state"]
+    },
+    {
+        "label": "MoM Growth",
+        "value": f"{kpis['mom_growth_pct']}%"
+    },
+])
 st.divider()
 
 # -------------------------------------------------------
 # Monthly revenue chart
 # -------------------------------------------------------
-st.subheader("📈 Monthly Revenue Trend")
+
+section_header(
+    "Monthly Revenue Trend",
+    "Revenue generated across the dataset over time."
+)
 
 chart_type = st.radio(
     "Select Visualization",
@@ -279,10 +305,24 @@ else:
 fig.update_layout(
     title=f"Monthly Revenue ({chart_type})",
     hovermode="x unified",
-    template="plotly_white",
-    xaxis_title="Month",
-    yaxis_title="Revenue (R$)"
-)
+    template="plotly_dark",
+    paper_bgcolor="#0B0909",
+    plot_bgcolor="#171717",
+    font=dict(
+        family="Droid Sans",
+        color="#F5F5F5"
+    ),
+    title_font=dict(
+        family="Oswald",
+        size=22
+    ),
+    xaxis=dict(
+        gridcolor="rgba(255,255,255,.08)"
+    ),
+    yaxis=dict(
+        gridcolor="rgba(255,255,255,.08)"
+    )
+    )
 st.plotly_chart(
     fig,
     width='stretch',
@@ -291,7 +331,11 @@ st.plotly_chart(
 
 st.divider()
 
-st.subheader("📥 Download Data")
+
+section_header(
+    "Download",
+    "Export the monthly revenue dataset."
+)
 csv = kpis["monthly_revenue"].to_csv(index=False)
 st.download_button(
     label="Download Monthly Revenue CSV",
@@ -303,3 +347,4 @@ st.download_button(
 st.caption(
     "Metrics are computed dynamically from the Olist Brazilian E-Commerce dataset."
 )
+footer("InsightIQ • KPI Dashboard")
