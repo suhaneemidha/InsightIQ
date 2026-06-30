@@ -1,11 +1,12 @@
 import streamlit as st
 import uuid
-
+from datetime import datetime
 from core.pipeline import run_pipeline
 from components.chartgenerator import render_chart
 from core.insight_generator import generate_followup_questions
 from ui.layout import apply_global_styles, section_spacer
 from ui.sidebar import render_sidebar_brand
+from ui.hero import render_page_banner
 from ui.components import (
     section_header,
     sidebar_stat,
@@ -17,16 +18,20 @@ st.set_page_config(
     page_icon="💬",
     layout="wide"
 )
-apply_global_styles()
 
+apply_global_styles()
 render_sidebar_brand(
     "InsightIQ",
-    "AI-powered analytics"
+    "AI-Powered Analytics"
 )
-
-section_header(
-    "💬 InsightIQ Chat",
-    "Ask natural language questions about the Olist e-commerce dataset."
+render_page_banner(
+    icon="💬",
+    title="InsightIQ Chat",
+    subtitle="Ask natural language questions about the Olist e-commerce dataset",
+    height=180,
+)
+st.caption(
+    f"Updated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}"
 )
 
 
@@ -36,8 +41,7 @@ st.sidebar.markdown("**Dataset Stats**")
 sidebar_stat("1.", "Orders", "~99,441")
 sidebar_stat("2.", "Customers", "~99,441")
 sidebar_stat("3.", "Sellers", "~3,095")
-
-st.sidebar.caption("📅 Sep 2016 – Oct 2018")
+st.sidebar.caption("📅 September 2016 – October 2018")
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -97,11 +101,29 @@ for idx, msg in enumerate(st.session_state.messages):
                 )
 
             if msg.get("followups"):
+                st.markdown("""
+                <style>
+                div[data-testid="stButton"] > button {
+                    background: #2E4540 !important;
+                    color: #F5F5F5 !important;
+                    border: 1px solid #408175 !important;
+                    border-radius: 10px !important;
+                    box-shadow: none !important;
+                    font-family: 'Cabin', sans-serif !important;
+                    font-weight: 500 !important;
+                }
+
+                div[data-testid="stButton"] > button:hover {
+                    background: #408175 !important;
+                    color: #F5F5F5 !important;
+                    transform: none !important;
+                }
+                </style>
+                """, unsafe_allow_html=True)
 
                 st.markdown("#### Related Questions")
 
                 for j, q in enumerate(msg["followups"]):
-
                     if st.button(
                         q,
                         key=f"history_followup_{idx}_{j}"
@@ -161,7 +183,7 @@ if prompt:
                 # Show cached badge if result came from semantic cache
                 if pipeline_result.get("from_cache"):
                     st.info(
-                        f"⚡ Cached result — similar to: "
+                        f"Cached result — similar to: "
                         f"*\"{pipeline_result.get('cache_hit_query', '')}\"*  "
                         f"(answered instantly)"
                     )
@@ -204,11 +226,6 @@ if prompt:
                     )
 
                     section_header("Visualization")
-                    display_df = display_df.head(1000)
-                    st.dataframe(
-                        display_df,
-                        width='stretch'
-                    )
 
                     render_chart(
                         execution["data"],
@@ -296,7 +313,7 @@ if prompt:
 
                             st.markdown("---")
                             section_header("Suggested Follow-up Questions")
-
+                            st.markdown('<div class="followup-buttons">', unsafe_allow_html=True)
                             for i, q in enumerate(st.session_state.followups):
 
                                 if st.button(
@@ -305,6 +322,8 @@ if prompt:
                                 ):
                                     st.session_state.pending_followup = q
                                     st.rerun()
+                            
+                            st.markdown("</div>", unsafe_allow_html=True)
                     
                     
                     if insights:

@@ -4,42 +4,44 @@ import plotly.express as px
 import pandas as pd
 from prophet import Prophet
 import plotly.graph_objects as go
+from datetime import datetime
 from ui.layout import apply_global_styles, section_spacer
 from ui.sidebar import render_sidebar_brand
+from ui.hero import render_page_banner
 from ui.components import (
     section_header,
     sidebar_stat,
     footer,
 )
 
-apply_global_styles()
+st.set_page_config(
+    page_title="InsightIQ ML Insights",
+    page_icon="📠",
+    layout="wide"
+)
 
+apply_global_styles()
 render_sidebar_brand(
     "InsightIQ",
-    "AI-Powered Business Intelligence"
+    "AI-Powered Analytics"
 )
-
-section_header(
-    "ML Insights",
-    "AI-powered forecasting, business intelligence and decision support."
+render_page_banner(
+    icon="📠",
+    title="ML Insights",
+    subtitle="AI-powered forecasting, business intelligence and decision support",
+    height=180,
 )
-st.sidebar.markdown("---")
-
-sidebar_stat("🛒", "Orders", "~99,441")
-sidebar_stat("👥", "Customers", "~99,441")
-sidebar_stat("🏪", "Sellers", "~3,095")
-
-st.sidebar.caption("📅 Sep 2016 – Oct 2018")
-
-
-# -------------------------------
-# AI Dashboard Time
-# -------------------------------
-from datetime import datetime
 st.caption(
-f"🕒 Dashboard generated on {datetime.now().strftime('%d %b %Y, %I:%M %p')}"
+    f"Updated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}"
 )
 
+# Sidebar stats
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Dataset Stats**")
+sidebar_stat("1.", "Orders", "~99,441")
+sidebar_stat("2.", "Customers", "~99,441")
+sidebar_stat("3.", "Sellers", "~3,095")
+st.sidebar.caption("📅 September 2016 – October 2018")
 
 # -------------------------------
 # Database connection

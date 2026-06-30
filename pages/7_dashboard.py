@@ -9,29 +9,43 @@ import sys, os
 from datetime import datetime
 from ui.layout import apply_global_styles, section_spacer
 from ui.sidebar import render_sidebar_brand
+from ui.hero import render_page_banner
 from ui.components import (
     section_header,
     metric_row,
+    sidebar_stat,
     footer,
 )
-apply_global_styles()
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-st.set_page_config(page_title="KPI Dashboard", layout="wide")
-st.title("📊 KPI Dashboard")
-st.caption("Pre-computed business metrics from the Olist dataset. Refreshes on page load.")
-
-
-
-render_sidebar_brand(
-    "InsightIQ",
-    "AI-Powered Business Intelligence"
+st.set_page_config(
+    page_title="InsightIQ Dashboard",
+    page_icon="📊",
+    layout="wide"
 )
 
+apply_global_styles()
+render_sidebar_brand(
+    "InsightIQ",
+    "AI-Powered Analytics"
+)
+render_page_banner(
+    icon="📊",
+    title="KPI Dashboard",
+    subtitle="Pre-computed business metrics from the Olist dataset. Refreshes on page load",
+    height=180,
+)
 st.caption(
     f"Updated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}"
 )
 
+# Sidebar stats
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Dataset Stats**")
+sidebar_stat("1.", "Orders", "~99,441")
+sidebar_stat("2.", "Customers", "~99,441")
+sidebar_stat("3.", "Sellers", "~3,095")
+st.sidebar.caption("📅 September 2016 – October 2018")
 
 # -------------------------------------------------------
 # Load all KPIs from DuckDB

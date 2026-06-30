@@ -12,7 +12,10 @@ TEMPLATE_PATH = (
     / "static"
     / "particles_template.html"
 )
-
+BANNER_TEMPLATE = Path(
+    Path(__file__).parent.parent
+    / "static"
+    / "banner_template.html")
 
 def render_hero_section(
     badge_text: str = "Business Intelligence Platform",
@@ -63,4 +66,33 @@ def render_hero_section(
         height=height,
         scrolling=False,
     )
-    
+def render_page_banner(
+    icon: str,
+    title: str,
+    subtitle: str,
+    height: int = 150,
+) -> None:
+    """
+    Smaller particle banner used on internal pages.
+    """
+
+    html = BANNER_TEMPLATE.read_text(encoding="utf-8")
+
+    banner_title = f"{icon} {title}"
+
+    replacements = {
+        "__HEIGHT__": str(height),
+        "__BADGE_TEXT__": "",
+        "__TITLE__": banner_title,
+        "__SUBTITLE__": subtitle,
+        "__CTA_TEXT__": "",
+    }
+
+    for placeholder, value in replacements.items():
+        html = html.replace(placeholder, value)
+
+    components.html(
+        html,
+        height=height,
+        scrolling=False,
+    )

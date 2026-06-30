@@ -7,12 +7,14 @@ import sys
 import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
+from datetime import datetime
 from ui.layout import apply_global_styles, section_spacer
 from ui.sidebar import render_sidebar_brand
+from ui.hero import render_page_banner
 from ui.components import (
     section_header,
     glass_card,
+    sidebar_stat,
     footer,
 )
 
@@ -25,20 +27,34 @@ from core.query_history import (
 # -------------------------------------------------------
 # Page config
 # -------------------------------------------------------
-st.set_page_config(page_title="Admin Panel", layout="wide")
-apply_global_styles()
+st.set_page_config(
+    page_title="InsightIQ Admin",
+    page_icon="💻",
+    layout="wide"
+)
 
+apply_global_styles()
 render_sidebar_brand(
     "InsightIQ",
-    "AI-Powered Business Intelligence"
+    "AI-Powered Analytics"
+)
+render_page_banner(
+    icon="💻",
+    title="Admin Panel",
+    subtitle="Review generated SQL and improve future responses",
+    height=180,
+)
+st.caption(
+    f"Updated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}"
 )
 
-section_header(
-    "Admin Panel",
-    "Review generated SQL and improve future responses."
-)
-
-section_spacer(15)
+# Sidebar stats
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Dataset Stats**")
+sidebar_stat("1.", "Orders", "~99,441")
+sidebar_stat("2.", "Customers", "~99,441")
+sidebar_stat("3.", "Sellers", "~3,095")
+st.sidebar.caption("📅 September 2016 – October 2018")
 
 # -------------------------------------------------------
 # Password gate

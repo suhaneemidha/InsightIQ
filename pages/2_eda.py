@@ -2,23 +2,44 @@ import streamlit as st
 import duckdb
 import plotly.express as px
 from ui.layout import apply_global_styles
+from datetime import datetime
+from ui.hero import render_page_banner
 from ui.sidebar import render_sidebar_brand
 from ui.components import (
     section_header,
     metric_row,
+    sidebar_stat,
     footer,
 )
-apply_global_styles()
 
+st.set_page_config(
+    page_title="InsightIQ EDA",
+    page_icon="🔍",
+    layout="wide"
+)
+
+apply_global_styles()
 render_sidebar_brand(
     "InsightIQ",
-    "AI-powered analytics"
+    "AI-Powered Analytics"
 )
-section_header(
-    "🔍 Exploratory Data Analysis",
-    "Interactive business insights from the Olist e-commerce dataset"
+render_page_banner(
+    icon="🔍",
+    title="Exploratory Data Analysis",
+    subtitle="Interactive business insights from the Olist e-commerce dataset",
+    height=180,
+)
+st.caption(
+    f"Updated: {datetime.now().strftime('%d %b %Y, %I:%M %p')}"
 )
 
+# Sidebar stats
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Dataset Stats**")
+sidebar_stat("1.", "Orders", "~99,441")
+sidebar_stat("2.", "Customers", "~99,441")
+sidebar_stat("3.", "Sellers", "~3,095")
+st.sidebar.caption("📅 September 2016 – October 2018")
 
 # --------------------------------
 # Database connection
@@ -28,29 +49,25 @@ conn = duckdb.connect(
     read_only=True
 )
 
-
 # --------------------------------
 # Dataset overview metrics
 # --------------------------------
 orders = conn.execute(
     "SELECT COUNT(*) FROM orders"
 ).fetchone()[0]
-
 customers = conn.execute(
     "SELECT COUNT(*) FROM customers"
 ).fetchone()[0]
-
 sellers = conn.execute(
     "SELECT COUNT(*) FROM sellers"
 ).fetchone()[0]
-
 products = conn.execute(
     "SELECT COUNT(*) FROM products"
 ).fetchone()[0]
 
+
 section_header("📊 Dataset Overview")
 col1, col2, col3, col4 = st.columns(4)
-
 col1.metric(
     "a. Orders",
     f"{orders:,}"
@@ -67,7 +84,6 @@ col4.metric(
     "d. Products",
     f"{products:,}"
 )
-
 st.info(
     "📅 Dataset duration: September 2016 - October 2018"
 )
