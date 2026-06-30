@@ -12,15 +12,112 @@ client = Groq(
 )
 
 def generate_insights(df: pd.DataFrame, question: str) -> list[str]:
-    # Preview only first few rows
-    data_preview = df.head(10).to_string(index=False)
+    # --------------------------------------------------
+    # Smart summarisation for large result sets
+    # --------------------------------------------------
 
+    MAX_RAW_ROWS = 200
+
+    if len(df) <= MAX_RAW_ROWS:
+
+        data_preview = df.to_string(index=False)
+
+    else:
+
+        summary_parts = []
+
+        summary_parts.append(
+            f"Total rows returned: {len(df)}"
+        )
+
+        summary_parts.append(
+            f"Columns: {', '.join(df.columns)}"
+        )
+
+        numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
+
+        # Numeric statistics
+        for col in numeric_cols:
+
+            summary_parts.append(
+                f"""
+                Column: {col}
+                Min: {df[col].min()}
+                Max: {df[col].max()}
+                Mean: {round(df[col].mean(), 2)}
+                Sum: {round(df[col].sum(), 2)}
+                """
+            )
+
+        # Top categorical distributions
+        for col in df.columns:
+
+            if col not in numeric_cols:
+
+                top_values = (
+                    df[col]
+                    .astype(str)
+                    .value_counts()
+                    .head(10)
+                    .to_dict()
+                )
+
+                summary_parts.append(
+                    f"""
+                    Top values for {col}:
+                    {top_values}
+                    """
+                )
+
+        # Show top and bottom performers for important metrics
+        for metric in ["sales", "revenue", "order_count", "count"]:
+
+            if metric in df.columns:
+
+                try:
+
+                    top_rows = (
+                        df.nlargest(
+                            min(20, len(df)),
+                            metric
+                        )
+                    )
+
+                    bottom_rows = (
+                        df.nsmallest(
+                            min(20, len(df)),
+                            metric
+                        )
+                    )
+
+                    summary_parts.append(
+                        f"""
+                        Top rows by {metric}:
+
+                        {top_rows.to_string(index=False)}
+                        """
+                    )
+
+                    summary_parts.append(
+                        f"""
+                        Bottom rows by {metric}:
+
+                        {bottom_rows.to_string(index=False)}
+                        """
+                    )
+
+                except Exception:
+                    pass
+
+        data_preview = "\n".join(summary_parts)
+    
     prompt = f"""
         Question:
         {question}
 
-        Query Result:
+        Query ResultStatistical Summary:
         {data_preview}
+        
         Return ONLY valid JSON.
 
         Format:

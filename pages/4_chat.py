@@ -157,11 +157,28 @@ if prompt:
 
                 if execution["success"]:
                     display_df = execution["data"]
-
-                if len(display_df) > 1000:
-                    st.info(
-                        f"Showing first 1000 of {len(display_df)} rows"
+                    
+                        
+                    if len(display_df) > 1000:
+                        st.info(
+                            f"Showing first 1000 of {len(display_df)} rows"
+                        )
+                    st.dataframe(
+                        display_df,
+                        width='stretch',
+                        height=700
                     )
+                    st.caption(
+                        f"Rows Returned: {execution['row_count']}"
+)                   
+                    csv = execution["data"].to_csv(index=False)
+                    st.download_button(
+                        label="⬇ Download Full Results",
+                        data=csv,
+                        file_name="query_results.csv",
+                        mime="text/csv"
+)
+                    st.subheader("📊 Visualization")
 
                     display_df = display_df.head(1000)
                     st.dataframe(

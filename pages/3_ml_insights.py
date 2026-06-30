@@ -313,7 +313,7 @@ fig.update_layout(
 
 st.plotly_chart(
     fig,
-    use_container_width=True,
+    width='stretch',
     config={"displayModeBar": False}
 )
 st.divider()
@@ -549,7 +549,7 @@ if st.button("Run Forecast"):
 
     st.plotly_chart(
     fig,
-    use_container_width=True,
+    width='stretch',
     config={"displayModeBar": False}
     )
 
@@ -572,7 +572,7 @@ if st.button("Run Forecast"):
 
     st.dataframe(
         table,
-        use_container_width=True,
+        width='stretch',
         hide_index=True
     )
 
