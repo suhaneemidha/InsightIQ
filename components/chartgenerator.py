@@ -3,32 +3,27 @@ import plotly.express as px
 import pandas as pd
 import uuid
 
+
 def suggest_chart(df):
-    """
-    Suggest a default chart type based on the result.
-    """
 
     if len(df.columns) < 2:
         return None
 
-    x_col = df.columns[0]
+    first_col = df.columns[0].lower()
 
-    if "date" in x_col.lower():
+    if any(
+        word in first_col
+        for word in ["date", "month", "year", "timestamp"]
+    ):
         return "Line"
 
-    if "month" in x_col.lower():
-        return "Line"
-
-    if df[x_col].nunique() <= 8:
+    if df[df.columns[0]].nunique() <= 8:
         return "Pie"
 
     return "Bar"
 
 
 def render_chart(df, key_suffix=""):
-    """
-    Renders an interactive chart for any query result.
-    """
 
     if df is None or df.empty:
         return
@@ -37,71 +32,277 @@ def render_chart(df, key_suffix=""):
         st.info("Not enough columns to generate a chart.")
         return
 
-    x_col = df.columns[0]
+    columns = list(df.columns)
 
-    numeric_cols = [
+    # --------------------------------------------------
+    # Detect dimensions and measures
+    # --------------------------------------------------
+
+    dimensions = [
         col
-        for col in df.columns
+        for col in columns
+        if not pd.api.types.is_numeric_dtype(df[col])
+    ]
+
+    measures = [
+        col
+        for col in columns
         if pd.api.types.is_numeric_dtype(df[col])
     ]
 
-    if not numeric_cols:
+    num_dims = len(dimensions)
+    num_measures = len(measures)
+
+    if not measures:
         st.info("No numeric columns available for visualization.")
         return
 
-    y_col = numeric_cols[0]
+    # --------------------------------------------------
+    # Choose x-axis
+    # --------------------------------------------------
+
+    time_cols = [
+        col
+        for col in columns
+        if any(
+            keyword in col.lower()
+            for keyword in [
+                "date",
+                "month",
+                "year",
+                "timestamp"
+            ]
+        )
+    ]
+
+    if time_cols:
+        x_col = time_cols[0]
+
+    elif dimensions:
+        x_col = dimensions[0]
+
+    else:
+        x_col = columns[0]
 
     default_chart = suggest_chart(df)
 
     chart_type = st.selectbox(
         "📊 Visualization",
-        ["Bar", "Line", "Pie", "Scatter"],
+        [
+            "Bar",
+            "Line",
+            "Pie",
+            "Scatter",
+            "Heatmap"
+        ],
         key=f"chart_type_{key_suffix}",
-        index=["Bar", "Line", "Pie", "Scatter"].index(default_chart)
+        index=[
+            "Bar",
+            "Line",
+            "Pie",
+            "Scatter",
+            "Heatmap"
+        ].index(default_chart)
+        if default_chart in [
+            "Bar",
+            "Line",
+            "Pie",
+            "Scatter",
+            "Heatmap"
+        ]
+        else 0
     )
 
     try:
 
+        # ==================================================
+        # BAR
+        # ==================================================
+
         if chart_type == "Bar":
 
-            fig = px.bar(
-                df,
-                x=x_col,
-                y=y_col,
-                title=f"{y_col} by {x_col}"
-            )
+            if num_dims >= 2 and num_measures == 1:
+
+                fig = px.bar(
+                    df,
+                    x=dimensions[0],
+                    y=measures[0],
+                    color=dimensions[1],
+                    barmode="group",
+                    title=f"{measures[0]} by {dimensions[0]}"
+                )
+
+            elif num_dims >= 2 and num_measures > 1:
+
+                selected_measure = st.selectbox(
+                    "Metric",
+                    measures,
+                    key=f"metric_bar_{key_suffix}"
+                )
+
+                fig = px.bar(
+                    df,
+                    x=dimensions[0],
+                    y=selected_measure,
+                    color=dimensions[1],
+                    barmode="group",
+                    title=f"{selected_measure} by {dimensions[0]}"
+                )
+
+            else:
+
+                fig = px.bar(
+                    df,
+                    x=x_col,
+                    y=measures,
+                    barmode="group",
+                    title=f"{', '.join(measures)} by {x_col}"
+                )
+
+        # ==================================================
+        # LINE
+        # ==================================================
 
         elif chart_type == "Line":
 
-            fig = px.line(
-                df,
-                x=x_col,
-                y=y_col,
-                title=f"{y_col} Trend"
-            )
+            # month | category | sales
+
+            if num_dims >= 2 and num_measures == 1:
+
+                fig = px.line(
+                    df,
+                    x=dimensions[0],
+                    y=measures[0],
+                    color=dimensions[1],
+                    markers=True,
+                    title=f"{measures[0]} by {dimensions[0]} and {dimensions[1]}"
+                )
+
+            # month | category | sales | orders
+
+            elif num_dims >= 2 and num_measures > 1:
+
+                selected_measure = st.selectbox(
+                    "Metric",
+                    measures,
+                    key=f"metric_line_{key_suffix}"
+                )
+
+                fig = px.line(
+                    df,
+                    x=dimensions[0],
+                    y=selected_measure,
+                    color=dimensions[1],
+                    markers=True,
+                    title=f"{selected_measure} by {dimensions[0]} and {dimensions[1]}"
+                )
+
+            else:
+
+                fig = px.line(
+                    df,
+                    x=x_col,
+                    y=measures,
+                    markers=True,
+                    title=f"{', '.join(measures)} over {x_col}"
+                )
+
+        # ==================================================
+        # PIE
+        # ==================================================
 
         elif chart_type == "Pie":
+
+            selected_measure = st.selectbox(
+                "Metric",
+                measures,
+                key=f"metric_pie_{key_suffix}"
+            )
 
             fig = px.pie(
                 df,
                 names=x_col,
-                values=y_col,
-                title=f"{y_col} Distribution"
+                values=selected_measure,
+                title=f"{selected_measure} Distribution"
             )
+
+        # ==================================================
+        # SCATTER
+        # ==================================================
 
         elif chart_type == "Scatter":
 
-            fig = px.scatter(
-                df,
-                x=x_col,
-                y=y_col,
-                title=f"{x_col} vs {y_col}"
-            )
-        elif chart_type == "Pie" and len(df) > 10:
-            st.warning("Pie charts work best with fewer than 10 categories.")
-            
+            if len(measures) >= 2:
+
+                x_metric = st.selectbox(
+                    "X Metric",
+                    measures,
+                    key=f"x_scatter_{key_suffix}"
+                )
+
+                y_metric = st.selectbox(
+                    "Y Metric",
+                    measures,
+                    index=min(1, len(measures)-1),
+                    key=f"y_scatter_{key_suffix}"
+                )
+
+                fig = px.scatter(
+                    df,
+                    x=x_metric,
+                    y=y_metric,
+                    color=dimensions[0] if dimensions else None,
+                    title=f"{x_metric} vs {y_metric}"
+                )
+
+            else:
+
+                st.info(
+                    "Scatter chart requires at least two numeric columns."
+                )
+                return
+
+        # ==================================================
+        # HEATMAP
+        # ==================================================
+
+        elif chart_type == "Heatmap":
+
+            if num_dims >= 2 and num_measures >= 1:
+
+                selected_measure = st.selectbox(
+                    "Metric",
+                    measures,
+                    key=f"metric_heatmap_{key_suffix}"
+                )
+
+                pivot_df = df.pivot_table(
+                    index=dimensions[1],
+                    columns=dimensions[0],
+                    values=selected_measure,
+                    aggfunc="sum"
+                )
+
+                fig = px.imshow(
+                    pivot_df,
+                    aspect="auto",
+                    title=f"{selected_measure} Heatmap"
+                )
+
+            else:
+
+                st.info(
+                    "Heatmap requires at least 2 dimensions and 1 measure."
+                )
+                return
+
+        # ==================================================
+        # FINAL DISPLAY
+        # ==================================================
+
         fig.update_layout(
-            height=500
+            height=600,
+            legend_title_text="Metrics"
         )
 
         st.plotly_chart(
@@ -111,4 +312,7 @@ def render_chart(df, key_suffix=""):
         )
 
     except Exception as e:
-        st.warning(f"Could not generate chart: {e}")
+
+        st.warning(
+            f"Could not generate chart: {e}"
+        )
