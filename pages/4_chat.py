@@ -1,4 +1,6 @@
 import streamlit as st
+import uuid
+
 from core.pipeline import run_pipeline
 from components.chartgenerator import render_chart
 from core.insight_generator import generate_followup_questions
@@ -172,53 +174,47 @@ if prompt:
                 st.code(sql, language="sql")
 
                 if execution["success"]:
+    
                     display_df = execution["data"]
-                    
-                        
+
                     if len(display_df) > 1000:
                         st.info(
                             f"Showing first 1000 of {len(display_df)} rows"
                         )
+                        display_df = display_df.head(1000)
+
                     st.dataframe(
                         display_df,
                         width='stretch',
                         height=700
                     )
+ 
                     st.caption(
                         f"Rows Returned: {execution['row_count']}"
-)                   
+                    )
+
                     csv = execution["data"].to_csv(index=False)
+
                     st.download_button(
                         label="⬇ Download Full Results",
                         data=csv,
                         file_name="query_results.csv",
-                        mime="text/csv"
-)
-                    section_header("Visualization")
+                        mime="text/csv",
+                        key=f"download_{uuid.uuid4()}"
+                    )
 
+                    section_header("Visualization")
                     display_df = display_df.head(1000)
                     st.dataframe(
                         display_df,
                         width='stretch'
                     )
-                    
-                    st.caption(
-                        f"Rows Returned: {execution['row_count']}"
-)                   
-                    csv = execution["data"].to_csv(index=False)
-                    st.download_button(
-                        label="⬇ Download Full Results",
-                        data=csv,
-                        file_name="query_results.csv",
-                        mime="text/csv"
-)
-                    section_header("Visualization")
 
                     render_chart(
                         execution["data"],
                         key_suffix=f"current_{len(st.session_state.messages)}"
                     )
-                    
+                                    
                     if insights:
 
                         section_header("Insights")
