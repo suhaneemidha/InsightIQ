@@ -326,10 +326,7 @@ if prompt:
                             st.markdown("</div>", unsafe_allow_html=True)
                     
                     
-                    if insights:
-                        response = "\n".join(insights)
-                    else:
-                        response = "\n".join(f"- {i}" for i in insights) if insights else "Query executed successfully."
+                    response = "\n".join(f"- {i}" for i in insights) if insights else "Query executed successfully."
                     
                     # ── Update conversation history for next turn ──────────
                     
@@ -339,7 +336,7 @@ if prompt:
                         "result":   execution["data"].head(5).to_string(index=False)
                                     if execution["data"] is not None else "(empty)",
                     })
-                    response = "\n".join(insights) if insights else f"Query executed successfully."
+        
                 else:
 
                     response = (

@@ -228,6 +228,7 @@ def generate_sql(nl_query: str, schema_context: list[str],conversation_context="
         
     prompt = f"""
     {SYSTEM_PROMPT}
+    
     {feedback_block}
     
     ### Similar Examples:
